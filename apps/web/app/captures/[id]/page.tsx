@@ -1,17 +1,45 @@
-import Link from "next/link";
-import { ArrowLeft, ExternalLink, Pencil, Trash2 } from "lucide-react";
-import { notFound } from "next/navigation";
-import { Shell, TypeBadge } from "../../components";
-import { captures } from "../../data";
+"use client";
 
-export default async function CaptureDetail({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const c = captures.find((x) => x.id === id);
-  if (!c) notFound();
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, ExternalLink, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { api } from "../../api";
+import type { ApiCapture } from "../../api-types";
+import { captureDate, captureExcerpt, captureTitle } from "../../capture-display";
+import { Shell, TypeBadge } from "../../components";
+
+export default function CaptureDetail() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const [capture, setCapture] = useState<ApiCapture | null>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    api
+      .get<ApiCapture>(`/captures/${id}`)
+      .then(setCapture)
+      .catch(() => setNotFound(true));
+  }, [id]);
+
+  const remove = async () => {
+    if (!capture) return;
+    await api.delete(`/captures/${capture.id}`);
+    router.push("/captures");
+  };
+
+  if (notFound) {
+    return (
+      <Shell>
+        <div className="page narrow">
+          <p>글감을 찾을 수 없어요.</p>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (!capture) return null;
+
   return (
     <Shell>
       <div className="page narrow">
@@ -20,48 +48,27 @@ export default async function CaptureDetail({
         </Link>
         <article className="detail-paper">
           <div className="detail-meta">
-            <TypeBadge type={c.type} />
-            <time>{c.date}</time>
+            <TypeBadge type={capture.type} />
+            <time>{captureDate(capture)}</time>
           </div>
-          {c.type === "image" && (
-            <div className="photo-placeholder" style={{ background: c.color }}>
-              <span>기억해 둔 장면</span>
-            </div>
-          )}
-          <h1>{c.title}</h1>
-          <p className="detail-body">
-            {c.excerpt}
-            <br />
-            <br />
-            처음 마주했을 때의 감각을 오래 기억하고 싶어 남겨둔 기록입니다.
-            언젠가 한 편의 글을 시작하는 조용한 문장이 되기를 바랍니다.
-          </p>
-          {c.type === "link" && (
-            <a className="link-preview" href="#">
+          <h1>{captureTitle(capture)}</h1>
+          <p className="detail-body">{captureExcerpt(capture)}</p>
+          {capture.type === "link" && capture.url && (
+            <a className="link-preview" href={capture.url} target="_blank" rel="noreferrer">
               <div>
-                <small>nook.example.com</small>
-                <b>{c.title}</b>
-                <p>{c.excerpt}</p>
+                <small>{capture.url}</small>
+                <b>{capture.link_title ?? capture.url}</b>
+                <p>{capture.link_description}</p>
               </div>
               <ExternalLink />
             </a>
           )}
-          {c.project && (
-            <div className="connected">
-              <span>연결된 프로젝트</span>
-              <Link href="/projects/travel-temperature">{c.project} →</Link>
-            </div>
-          )}
           <div className="detail-actions">
-            <button>
-              <Pencil /> 수정
-            </button>
-            <button className="danger">
+            <button className="danger" onClick={remove}>
               <Trash2 /> 삭제
             </button>
           </div>
         </article>
-        {/* TODO(backend): capture 상세 조회·수정·삭제 및 연결 프로젝트 API와 연결해야 합니다. */}
       </div>
     </Shell>
   );

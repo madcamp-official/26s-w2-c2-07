@@ -1,9 +1,19 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowRight, FileText, Plus } from "lucide-react";
-import { PageHead, Shell } from "../components";
-import { projects } from "../data";
+import { ArrowRight, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { api } from "../api";
+import type { ApiProject } from "../api-types";
+import { PageHead, Shell, StatusBadge } from "../components";
 
 export default function Projects() {
+  const [projects, setProjects] = useState<ApiProject[]>([]);
+
+  useEffect(() => {
+    api.get<ApiProject[]>("/projects").then(setProjects).catch(() => setProjects([]));
+  }, []);
+
   return (
     <Shell>
       <div className="page">
@@ -28,18 +38,11 @@ export default function Projects() {
                 <span>N</span>
               </div>
               <div className="project-info">
-                <span className="status">
-                  <i />
-                  {p.status}
-                </span>
+                <StatusBadge status={p.status} />
                 <h2>{p.title}</h2>
                 <p>{p.description}</p>
                 <div className="counts">
-                  <span>
-                    <FileText /> 원고 {p.manuscripts.length}
-                  </span>
-                  <span>글감 {p.captures}</span>
-                  <time>마지막 수정 {p.updated}</time>
+                  <time>마지막 수정 {new Date(p.updated_at).toLocaleDateString("ko-KR")}</time>
                 </div>
               </div>
               <ArrowRight className="arrow" />

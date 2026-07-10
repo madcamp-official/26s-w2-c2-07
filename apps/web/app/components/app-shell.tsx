@@ -13,9 +13,12 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { notifications, profile } from "../data";
+import { api } from "../api";
+import type { ApiProfile } from "../api-types";
+import { notifications } from "../data";
+import { supabase } from "../supabase-client";
 
 const navigation = [
   { href: "/", icon: Home, label: "홈" },
@@ -25,11 +28,15 @@ const navigation = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activePopup, setActivePopup] = useState<
     "notifications" | "account" | null
   >(null);
   const popupAreaRef = useRef<HTMLDivElement>(null);
+  const [profile, setProfile] = useState<ApiProfile | null>(null);
+  const [email, setEmail] = useState<string | undefined>();
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     const closeOnOutsideClick = (event: MouseEvent) => {
@@ -41,6 +48,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     document.addEventListener("mousedown", closeOnOutsideClick);
     return () => document.removeEventListener("mousedown", closeOnOutsideClick);
   }, []);
+
+  useEffect(() => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        router.replace("/login");
+        setProfile(null);
+        setEmail(undefined);
+      } else {
+        setEmail(session.user.email);
+        api.get<ApiProfile>("/me").then(setProfile).catch(() => setProfile(null));
+      }
+      setAuthChecked(true);
+    });
+    return () => subscription.subscription.unsubscribe();
+  }, [router]);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
+  if (!authChecked) return null;
 
   const isActive = (href: string) =>
     href === "/" ? pathname === href : pathname.startsWith(href);
@@ -118,11 +147,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-label="계정 메뉴"
               aria-expanded={activePopup === "account"}
             >
-              {profile.initial}
+              {profile?.display_name?.[0] ?? "?"}
             </button>
 
             {activePopup === "notifications" && <NotificationPopup />}
-            {activePopup === "account" && <AccountPopup />}
+            {activePopup === "account" && (
+              <AccountPopup profile={profile} email={email} onSignOut={signOut} />
+            )}
           </div>
         </header>
         {children}
@@ -163,22 +194,30 @@ function NotificationPopup() {
   );
 }
 
-function AccountPopup() {
+function AccountPopup({
+  profile,
+  email,
+  onSignOut,
+}: {
+  profile: ApiProfile | null;
+  email: string | undefined;
+  onSignOut: () => void;
+}) {
   return (
     <section className="top-popup account-popup" aria-label="계정 메뉴">
       <div className="account-summary">
-        <span className="avatar">{profile.initial}</span>
+        <span className="avatar">{profile?.display_name?.[0] ?? "?"}</span>
         <div>
-          <b>{profile.name}</b>
-          <small>{profile.email}</small>
+          <b>{profile?.display_name ?? "이름 없음"}</b>
+          <small>{email}</small>
         </div>
       </div>
       <Link href="/profile">
         <UserRound /> 내 프로필
       </Link>
-      <Link href="/login">
+      <button onClick={onSignOut}>
         <LogOut /> 로그아웃
-      </Link>
+      </button>
       <button className="danger-menu-item">
         <Trash2 /> 회원 탈퇴
       </button>

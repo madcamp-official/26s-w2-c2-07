@@ -9,6 +9,7 @@
     "format:check": "prettier --check app"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",

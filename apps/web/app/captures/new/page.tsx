@@ -1,28 +1,75 @@
 "use client";
 
-import { Image, Link2, Type, Upload } from "lucide-react";
+import { Image, Link2, Type, Upload, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { api } from "../../api";
+import type { ApiCapture, ApiTag } from "../../api-types";
 import { PageHead, Shell } from "../../components";
-import { tags, type CaptureType } from "../../data";
+import { supabase } from "../../supabase-client";
+import { type CaptureType } from "../../data";
+
+const STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET!;
 
 const captureTypes = [
   { value: "text" as const, icon: Type, label: "조각글" },
-  { value: "image" as const, icon: Image, label: "사진" },
+  { value: "photo" as const, icon: Image, label: "사진" },
+  { value: "video" as const, icon: Video, label: "동영상" },
   { value: "link" as const, icon: Link2, label: "링크" },
 ];
 
 export default function NewCapturePage() {
   const router = useRouter();
   const [type, setType] = useState<CaptureType>("text");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [text, setText] = useState("");
+  const [url, setUrl] = useState("");
+  const [memo, setMemo] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [tags, setTags] = useState<ApiTag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
-  const toggleTag = (tagName: string) => {
-    setSelectedTags((current) =>
-      current.includes(tagName)
-        ? current.filter((name) => name !== tagName)
-        : [...current, tagName],
+  useEffect(() => {
+    api.get<ApiTag[]>("/tags").then(setTags).catch(() => setTags([]));
+  }, []);
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTagIds((current) =>
+      current.includes(tagId)
+        ? current.filter((id) => id !== tagId)
+        : [...current, tagId],
     );
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const capture = await api.post<ApiCapture>("/captures", {
+        type,
+        content: type === "text" ? text : memo || undefined,
+        url: type === "link" ? url : undefined,
+      });
+
+      if ((type === "photo" || type === "video") && file) {
+        const { uploadUrl, storagePath, token } = await api.post<{
+          uploadUrl: string;
+          storagePath: string;
+          token: string;
+        }>(`/captures/${capture.id}/assets/upload-url`, { fileName: file.name, contentType: file.type });
+        void uploadUrl;
+        await supabase.storage.from(STORAGE_BUCKET).uploadToSignedUrl(storagePath, token, file);
+        await api.post(`/captures/${capture.id}/assets/complete`, { storagePath });
+      }
+
+      await Promise.all(
+        selectedTagIds.map((tagId) => api.post(`/captures/${capture.id}/tags`, { tagId })),
+      );
+
+      router.push("/captures");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -46,26 +93,45 @@ export default function NewCapturePage() {
               </button>
             ))}
           </div>
-          <label>
-            제목
-            <input placeholder="나중에 알아보기 쉬운 제목" />
-          </label>
           {type === "text" && (
             <label>
               내용
-              <textarea placeholder="떠오른 문장이나 생각을 자유롭게 적어보세요." />
+              <textarea
+                value={text}
+                onChange={(event) => setText(event.target.value)}
+                placeholder="떠오른 문장이나 생각을 자유롭게 적어보세요."
+              />
             </label>
           )}
-          {type === "image" && (
+          {(type === "photo" || type === "video") && (
             <>
-              <button className="upload">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={type === "photo" ? "image/*" : "video/*"}
+                hidden
+                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              />
+              <button className="upload" onClick={() => fileInputRef.current?.click()}>
                 <Upload />
-                <b>사진을 끌어놓거나 선택하세요</b>
-                <span>JPG, PNG · 최대 10MB</span>
+                <b>
+                  {file
+                    ? file.name
+                    : type === "photo"
+                      ? "사진을 선택하세요"
+                      : "동영상을 선택하세요"}
+                </b>
+                <span>
+                  {type === "photo" ? "JPG, PNG · 최대 10MB" : "MP4, MOV · 최대 200MB"}
+                </span>
               </button>
               <label>
                 메모
-                <textarea placeholder="이 장면을 기억하고 싶은 이유를 적어보세요." />
+                <textarea
+                  value={memo}
+                  onChange={(event) => setMemo(event.target.value)}
+                  placeholder="이 장면/영상을 기억하고 싶은 이유를 적어보세요."
+                />
               </label>
             </>
           )}
@@ -73,11 +139,20 @@ export default function NewCapturePage() {
             <>
               <label>
                 URL
-                <input type="url" placeholder="https://" />
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(event) => setUrl(event.target.value)}
+                  placeholder="https://"
+                />
               </label>
               <label>
                 메모
-                <textarea placeholder="링크와 함께 기억할 내용을 적어보세요." />
+                <textarea
+                  value={memo}
+                  onChange={(event) => setMemo(event.target.value)}
+                  placeholder="링크와 함께 기억할 내용을 적어보세요."
+                />
               </label>
             </>
           )}
@@ -90,8 +165,8 @@ export default function NewCapturePage() {
                 <button
                   type="button"
                   key={tag.id}
-                  className={selectedTags.includes(tag.name) ? "active" : ""}
-                  onClick={() => toggleTag(tag.name)}
+                  className={selectedTagIds.includes(tag.id) ? "active" : ""}
+                  onClick={() => toggleTag(tag.id)}
                 >
                   #{tag.name}
                 </button>
@@ -102,15 +177,10 @@ export default function NewCapturePage() {
             <button className="button ghost" onClick={() => router.back()}>
               취소
             </button>
-            <button
-              className="button primary"
-              onClick={() => router.push("/captures")}
-            >
-              글감 저장
+            <button className="button primary" onClick={save} disabled={saving}>
+              {saving ? "저장 중…" : "글감 저장"}
             </button>
           </div>
-          <p className="backend-note">현재 저장은 화면 시연용입니다.</p>
-          {/* TODO(backend): capture, capture_tags 생성 및 이미지 업로드 API와 연결해야 합니다. */}
         </div>
       </div>
     </Shell>

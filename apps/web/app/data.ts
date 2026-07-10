@@ -1,5 +1,5 @@
-export type CaptureType = "text" | "image" | "link";
-export type ProjectStatus = "초안" | "진행 중" | "완료" | "보관됨";
+export type CaptureType = "text" | "photo" | "link" | "video";
+export type ProjectStatus = "active" | "done" | "archived";
 
 export interface Tag {
   id: string;
@@ -67,7 +67,7 @@ export const captures: Capture[] = [
   },
   {
     id: "rainy-window",
-    type: "image",
+    type: "photo",
     title: "비 오는 오후의 창가",
     excerpt: "창에 맺힌 물방울과 느리게 번지는 도시의 불빛.",
     date: "어제 16:42",
@@ -93,7 +93,7 @@ export const captures: Capture[] = [
   },
   {
     id: "summer-table",
-    type: "image",
+    type: "photo",
     title: "여름 오후의 작업 테이블",
     excerpt: "식어가는 차와 펼쳐 둔 노트, 길어진 그림자.",
     date: "7월 3일",
@@ -117,7 +117,7 @@ export const projects: Project[] = [
     id: "travel-temperature",
     title: "여행의 온도",
     description: "낯선 도시에서 만난 풍경과 사람, 그때의 마음을 기록합니다.",
-    status: "진행 중",
+    status: "active",
     updated: "오늘 09:15",
     captures: 12,
     manuscripts: [
@@ -148,7 +148,7 @@ export const projects: Project[] = [
     id: "small-records",
     title: "나의 작은 기록들",
     description: "매일의 사소한 장면을 잊지 않기 위한 짧은 산문 모음.",
-    status: "초안",
+    status: "active",
     updated: "7월 8일",
     captures: 8,
     manuscripts: [
@@ -172,7 +172,7 @@ export const projects: Project[] = [
     id: "letters-to-season",
     title: "계절에게 보내는 편지",
     description: "지나가는 계절마다 한 편씩 남기는 편지.",
-    status: "진행 중",
+    status: "active",
     updated: "6월 30일",
     captures: 5,
     manuscripts: [

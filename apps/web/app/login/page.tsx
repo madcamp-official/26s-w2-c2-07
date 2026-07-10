@@ -1,7 +1,17 @@
+"use client";
+
 import Link from "next/link";
 import { Feather } from "lucide-react";
+import { supabase } from "../supabase-client";
 
 export default function Login() {
+  const signInWithGoogle = () => {
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+  };
+
   return (
     <main className="login">
       <section className="login-story">
@@ -28,13 +38,12 @@ export default function Login() {
           <p className="subtitle">
             흩어진 영감을 모으고, 한 편의 글로 이어가세요.
           </p>
-          <Link href="/" className="google">
+          <button onClick={signInWithGoogle} className="google">
             <span>G</span> Google로 계속하기
-          </Link>
+          </button>
           <p className="terms">
             계속하면 Nook의 이용약관 및 개인정보처리방침에 동의하게 됩니다.
           </p>
-          {/* TODO(backend): Supabase Google OAuth 로그인 및 인증 콜백과 연결해야 합니다. */}
         </div>
       </section>
     </main>

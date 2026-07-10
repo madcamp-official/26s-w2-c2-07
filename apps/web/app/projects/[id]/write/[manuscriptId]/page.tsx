@@ -9,39 +9,81 @@ import {
   PanelRightOpen,
   Search,
   Type,
+  Video,
 } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { captures, projects } from "../../../../data";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { api } from "../../../../api";
+import type { ApiDocument, ApiProject, ApiProjectCaptureLink } from "../../../../api-types";
+import { captureExcerpt, captureTitle } from "../../../../capture-display";
+import { captureTypeLabels } from "../../../../components";
+import { type CaptureType } from "../../../../data";
+
+const referenceIcons: Record<CaptureType, typeof Type> = {
+  text: Type,
+  photo: Image,
+  link: Link2,
+  video: Video,
+};
 
 export default function Writer() {
   const params = useParams<{ id: string; manuscriptId: string }>();
-  const p = projects.find((x) => x.id === params.id) || projects[0];
-  const m = p.manuscripts.find((x) => x.id === params.manuscriptId);
-  const [title, setTitle] = useState(m?.title || "");
-  const [body, setBody] = useState(
-    m
-      ? `${m.excerpt}\n\n처음 보는 골목과 익숙하지 않은 공기 사이에서, 나는 평소보다 오래 한 자리에 머물렀다.\n\n그 순간 모든 것이 멈춘 듯 고요했고, 마음 한편이 편안하게 풀어지는 느낌이었다.`
-      : "",
-  );
+  const [project, setProject] = useState<ApiProject | null>(null);
+  const [links, setLinks] = useState<ApiProjectCaptureLink[]>([]);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
   const [panel, setPanel] = useState(true);
   const [saved, setSaved] = useState(true);
+  const [loaded, setLoaded] = useState(false);
+  const [query, setQuery] = useState("");
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    api.get<ApiProject>(`/projects/${params.id}`).then(setProject);
+    api.get<ApiProjectCaptureLink[]>(`/projects/${params.id}/captures`).then(setLinks);
+    api
+      .get<ApiDocument>(`/projects/${params.id}/documents/${params.manuscriptId}`)
+      .then((doc) => {
+        setTitle(doc.title);
+        setBody(doc.content);
+        setLoaded(true);
+      });
+  }, [params.id, params.manuscriptId]);
+
+  useEffect(() => {
+    if (!loaded) return;
     setSaved(false);
-    const t = setTimeout(() => setSaved(true), 800);
-    return () => clearTimeout(t);
-  }, [title, body]);
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      await api.patch(`/projects/${params.id}/documents/${params.manuscriptId}`, {
+        title,
+        content: body,
+      });
+      setSaved(true);
+    }, 800);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, body, loaded]);
 
   const count = useMemo(() => body.length, [body]);
+  const visibleLinks = useMemo(
+    () =>
+      links.filter(({ captures: c }) =>
+        `${captureTitle(c)} ${captureExcerpt(c)}`.includes(query),
+      ),
+    [links, query],
+  );
+
   return (
     <div className={`writer ${panel ? "panel-on" : ""}`}>
       <header className="writer-header">
         <div>
-          <Link href={`/projects/${p.id}`}>
+          <Link href={`/projects/${params.id}`}>
             <ArrowLeft />
           </Link>
-          <Link href={`/projects/${p.id}`}>{p.title}</Link>
+          <Link href={`/projects/${params.id}`}>{project?.title}</Link>
           <ChevronRight />
           <span>{title || "새 원고"}</span>
         </div>
@@ -69,14 +111,13 @@ export default function Writer() {
         />
         <footer>
           <span>{count.toLocaleString()}자</span>
-          <span>마지막 자동 저장 · 방금 전</span>
         </footer>
       </main>
       <aside className="reference-panel">
         <div className="reference-head">
           <div>
             <b>연결된 글감</b>
-            <small>{captures.length}개의 영감</small>
+            <small>{links.length}개의 영감</small>
           </div>
           <button className="icon-btn" onClick={() => setPanel(false)}>
             <PanelRightClose />
@@ -84,29 +125,26 @@ export default function Writer() {
         </div>
         <label className="search">
           <Search />
-          <input placeholder="글감 검색" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="글감 검색"
+          />
         </label>
         <div className="reference-list">
-          {captures.map((c) => {
-            const I =
-              c.type === "text" ? Type : c.type === "image" ? Image : Link2;
+          {visibleLinks.map(({ capture_id, captures: c }) => {
+            const I = referenceIcons[c.type];
             return (
-              <article key={c.id}>
+              <article key={capture_id}>
                 <span>
                   <I />
                 </span>
                 <div>
-                  <small>
-                    {c.type === "text"
-                      ? "조각글"
-                      : c.type === "image"
-                        ? "사진"
-                        : "링크"}
-                  </small>
-                  <b>{c.title}</b>
-                  <p>{c.excerpt}</p>
+                  <small>{captureTypeLabels[c.type]}</small>
+                  <b>{captureTitle(c)}</b>
+                  <p>{captureExcerpt(c)}</p>
                   <button
-                    onClick={() => setBody((v) => `${v}\n\n${c.excerpt}`)}
+                    onClick={() => setBody((v) => `${v}\n\n${captureExcerpt(c)}`)}
                   >
                     원고에 넣기
                   </button>
@@ -116,7 +154,6 @@ export default function Writer() {
           })}
         </div>
       </aside>
-      {/* TODO(backend): document 조회·800ms 자동 저장 및 연결 capture 조회 API와 연결해야 합니다. */}
     </div>
   );
 }

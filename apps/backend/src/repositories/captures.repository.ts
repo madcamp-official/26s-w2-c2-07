@@ -8,10 +8,18 @@ export interface LinkPreviewFields {
   linkImageUrl: string | null;
 }
 
+const CAPTURE_SELECT_WITH_TAGS = "*, capture_tags(tags(id, name, color))";
+
+// capture_tags(tags(...)) 중첩 구조를 tags: [{id,name,color}] 형태로 펼쳐준다
+function flattenTags<T extends { capture_tags?: { tags: unknown }[] }>(row: T) {
+  const { capture_tags, ...rest } = row;
+  return { ...rest, tags: (capture_tags ?? []).map((ct) => ct.tags) };
+}
+
 export async function listCaptures(userId: string, type?: string) {
   let query = supabaseAdmin
     .from("captures")
-    .select("*")
+    .select(CAPTURE_SELECT_WITH_TAGS)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
@@ -19,19 +27,19 @@ export async function listCaptures(userId: string, type?: string) {
 
   const { data, error } = await query;
   if (error) throw HttpError.badRequest(error.message);
-  return data;
+  return data.map(flattenTags);
 }
 
 export async function getCaptureById(userId: string, captureId: string) {
   const { data, error } = await supabaseAdmin
     .from("captures")
-    .select("*")
+    .select(CAPTURE_SELECT_WITH_TAGS)
     .eq("user_id", userId)
     .eq("id", captureId)
     .single();
 
   if (error) throw HttpError.notFound("Capture not found");
-  return data;
+  return flattenTags(data);
 }
 
 export async function createCapture(userId: string, input: CreateCaptureInput, preview?: LinkPreviewFields) {

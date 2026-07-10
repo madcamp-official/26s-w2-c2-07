@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowRight,
   FileText,
   MoreHorizontal,
   Plus,
@@ -10,29 +9,87 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import { captures, type Project, type ProjectStatus } from "../../data";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { api } from "../../api";
+import type { ApiCapture, ApiDocument, ApiProject, ApiProjectCaptureLink } from "../../api-types";
+import { captureExcerpt, captureTitle } from "../../capture-display";
+import { StatusBadge, projectStatusLabels } from "../../components";
+import type { ProjectStatus } from "../../data";
 
-const statuses: ProjectStatus[] = ["초안", "진행 중", "완료", "보관됨"];
+const statuses: ProjectStatus[] = ["active", "done", "archived"];
 
-export function ProjectDetailClient({ project }: { project: Project }) {
+export function ProjectDetailClient({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const [project, setProject] = useState<ApiProject | null>(null);
+  const [documents, setDocuments] = useState<ApiDocument[]>([]);
+  const [links, setLinks] = useState<ApiProjectCaptureLink[]>([]);
+  const [allCaptures, setAllCaptures] = useState<ApiCapture[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [draft, setDraft] = useState(project);
+  const [linking, setLinking] = useState(false);
+  const [draft, setDraft] = useState({ title: "", description: "", status: "active" as ProjectStatus });
+
+  const load = () => {
+    api.get<ApiProject>(`/projects/${projectId}`).then((p) => {
+      setProject(p);
+      setDraft({ title: p.title, description: p.description ?? "", status: p.status });
+    });
+    api.get<ApiDocument[]>(`/projects/${projectId}/documents`).then(setDocuments);
+    api.get<ApiProjectCaptureLink[]>(`/projects/${projectId}/captures`).then(setLinks);
+  };
+
+  useEffect(load, [projectId]);
+
+  const saveEdit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    await api.patch(`/projects/${projectId}`, draft);
+    setEditing(false);
+    load();
+  };
+
+  const removeProject = async () => {
+    await api.delete(`/projects/${projectId}`);
+    router.push("/projects");
+  };
+
+  const createDocument = async () => {
+    const doc = await api.post<ApiDocument>(`/projects/${projectId}/documents`, {});
+    router.push(`/projects/${projectId}/write/${doc.id}`);
+  };
+
+  const openLinkPicker = () => {
+    setLinking((current) => !current);
+    if (!linking) api.get<ApiCapture[]>("/captures").then(setAllCaptures);
+  };
+
+  const linkCapture = async (captureId: string) => {
+    await api.post(`/projects/${projectId}/captures`, { captureId });
+    setLinking(false);
+    load();
+  };
+
+  const unlinkCapture = async (captureId: string) => {
+    await api.delete(`/projects/${projectId}/captures/${captureId}`);
+    load();
+  };
+
+  if (!project) return null;
+
+  const linkedIds = new Set(links.map((l) => l.capture_id));
+  const unlinkedCaptures = allCaptures.filter((c) => !linkedIds.has(c.id));
 
   return (
     <>
       <div className="project-hero">
         <div>
-          <span className="status">
-            <i />
-            {draft.status}
-          </span>
-          <h1>{draft.title}</h1>
-          <p>{draft.description}</p>
+          <StatusBadge status={project.status} />
+          <h1>{project.title}</h1>
+          <p>{project.description}</p>
           <small>
-            마지막 수정 {draft.updated} · 글감 {draft.captures}개
+            마지막 수정 {new Date(project.updated_at).toLocaleDateString("ko-KR")} · 글감{" "}
+            {links.length}개
           </small>
         </div>
         <div className="project-menu-wrap">
@@ -72,30 +129,27 @@ export function ProjectDetailClient({ project }: { project: Project }) {
           <div>
             <FileText />
             <h2>원고</h2>
-            <span className="number">{draft.manuscripts.length}</span>
+            <span className="number">{documents.length}</span>
           </div>
-          <Link href={`/projects/${draft.id}/write/new`}>
+          <button onClick={createDocument}>
             <Plus /> 새 원고
-          </Link>
+          </button>
         </div>
         <div className="manuscripts">
-          {draft.manuscripts.map((manuscript, index) => (
+          {documents.map((doc, index) => (
             <Link
-              href={`/projects/${draft.id}/write/${manuscript.id}`}
-              key={manuscript.id}
+              href={`/projects/${projectId}/write/${doc.id}`}
+              key={doc.id}
               className="manuscript"
             >
               <span className="manuscript-no">
                 {String(index + 1).padStart(2, "0")}
               </span>
               <div>
-                <h3>{manuscript.title}</h3>
-                <p>{manuscript.excerpt}</p>
-                <small>
-                  {manuscript.updated} · {manuscript.words.toLocaleString()}자
-                </small>
+                <h3>{doc.title}</h3>
+                <p>{doc.content.slice(0, 80)}</p>
+                <small>{new Date(doc.updated_at).toLocaleDateString("ko-KR")}</small>
               </div>
-              <ArrowRight />
             </Link>
           ))}
         </div>
@@ -107,30 +161,40 @@ export function ProjectDetailClient({ project }: { project: Project }) {
             <Sparkles />
             <h2>연결된 글감</h2>
           </div>
-          <button>
+          <button onClick={openLinkPicker}>
             글감 연결 <Plus />
           </button>
         </div>
+        {linking && (
+          <div className="mini-cards">
+            {unlinkedCaptures.map((capture) => (
+              <button key={capture.id} onClick={() => linkCapture(capture.id)}>
+                <small>{captureTitle(capture)}</small>
+                <p>{captureExcerpt(capture)}</p>
+              </button>
+            ))}
+            {!unlinkedCaptures.length && <p>연결할 수 있는 글감이 없어요.</p>}
+          </div>
+        )}
         <div className="mini-cards">
-          {captures.slice(0, 4).map((capture) => (
-            <Link href={`/captures/${capture.id}`} key={capture.id}>
-              <small>{capture.date}</small>
-              <b>{capture.title}</b>
-              <p>{capture.excerpt}</p>
-            </Link>
+          {links.map(({ capture_id, captures: capture }) => (
+            <div key={capture_id} style={{ position: "relative" }}>
+              <Link href={`/captures/${capture_id}`}>
+                <small>{new Date(capture.created_at).toLocaleDateString("ko-KR")}</small>
+                <b>{captureTitle(capture)}</b>
+                <p>{captureExcerpt(capture)}</p>
+              </Link>
+              <button aria-label="연결 해제" onClick={() => unlinkCapture(capture_id)}>
+                <X />
+              </button>
+            </div>
           ))}
         </div>
       </section>
 
       {editing && (
         <div className="modal-backdrop" role="presentation">
-          <form
-            className="dialog"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setEditing(false);
-            }}
-          >
+          <form className="dialog" onSubmit={saveEdit}>
             <div className="dialog-heading">
               <div>
                 <h2>프로젝트 정보 수정</h2>
@@ -148,18 +212,14 @@ export function ProjectDetailClient({ project }: { project: Project }) {
               프로젝트 이름
               <input
                 value={draft.title}
-                onChange={(event) =>
-                  setDraft({ ...draft, title: event.target.value })
-                }
+                onChange={(event) => setDraft({ ...draft, title: event.target.value })}
               />
             </label>
             <label>
               설명
               <textarea
                 value={draft.description}
-                onChange={(event) =>
-                  setDraft({ ...draft, description: event.target.value })
-                }
+                onChange={(event) => setDraft({ ...draft, description: event.target.value })}
               />
             </label>
             <label>
@@ -167,14 +227,13 @@ export function ProjectDetailClient({ project }: { project: Project }) {
               <select
                 value={draft.status}
                 onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    status: event.target.value as ProjectStatus,
-                  })
+                  setDraft({ ...draft, status: event.target.value as ProjectStatus })
                 }
               >
                 {statuses.map((status) => (
-                  <option key={status}>{status}</option>
+                  <option key={status} value={status}>
+                    {projectStatusLabels[status]}
+                  </option>
                 ))}
               </select>
             </label>
@@ -205,14 +264,13 @@ export function ProjectDetailClient({ project }: { project: Project }) {
               >
                 취소
               </button>
-              <Link className="button danger-button" href="/projects">
+              <button className="button danger-button" onClick={removeProject}>
                 삭제
-              </Link>
+              </button>
             </div>
           </section>
         </div>
       )}
-      {/* TODO(backend): project 수정·삭제 및 project_captures 연결 API와 연결해야 합니다. */}
     </>
   );
 }

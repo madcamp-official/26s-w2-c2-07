@@ -1,18 +1,13 @@
+"use client";
+
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Shell } from "../../components";
-import { projects } from "../../data";
 import { ProjectDetailClient } from "./project-detail-client";
 
-export default async function ProjectDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const project = projects.find((item) => item.id === id);
-  if (!project) notFound();
+export default function ProjectDetailPage() {
+  const { id } = useParams<{ id: string }>();
 
   return (
     <Shell>
@@ -20,7 +15,7 @@ export default async function ProjectDetailPage({
         <Link href="/projects" className="back">
           <ArrowLeft /> 프로젝트
         </Link>
-        <ProjectDetailClient project={project} />
+        <ProjectDetailClient projectId={id} />
       </div>
     </Shell>
   );

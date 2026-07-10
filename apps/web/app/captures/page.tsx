@@ -1,21 +1,20 @@
 "use client";
 
-import { Image, Link2, Plus, Search, Tag, Trash2, Type, X } from "lucide-react";
+import { Image, Link2, Plus, Search, Tag, Trash2, Type, Video, X } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "../api";
+import type { ApiCapture, ApiTag } from "../api-types";
+import { captureExcerpt, captureTitle, captureDate } from "../capture-display";
 import { AddButton, PageHead, Shell, TypeBadge } from "../components";
-import {
-  captures,
-  tags as initialTags,
-  type CaptureType,
-  type Tag as TagData,
-} from "../data";
+import { type CaptureType } from "../data";
 
-const captureIcons = { text: Type, image: Image, link: Link2 };
+const captureIcons = { text: Type, photo: Image, link: Link2, video: Video };
 const filters: Array<{ value: "all" | CaptureType; label: string }> = [
   { value: "all", label: "전체" },
   { value: "text", label: "조각글" },
-  { value: "image", label: "사진" },
+  { value: "photo", label: "사진" },
+  { value: "video", label: "동영상" },
   { value: "link", label: "링크" },
 ];
 
@@ -23,35 +22,48 @@ export default function CapturesPage() {
   const [filter, setFilter] = useState<"all" | CaptureType>("all");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [tags, setTags] = useState<TagData[]>(initialTags);
+  const [captures, setCaptures] = useState<ApiCapture[]>([]);
+  const [tags, setTags] = useState<ApiTag[]>([]);
   const [newTagName, setNewTagName] = useState("");
+
+  const loadCaptures = () => {
+    api.get<ApiCapture[]>("/captures").then(setCaptures).catch(() => setCaptures([]));
+  };
+  const loadTags = () => {
+    api.get<ApiTag[]>("/tags").then(setTags).catch(() => setTags([]));
+  };
+
+  useEffect(() => {
+    loadCaptures();
+    loadTags();
+  }, []);
 
   const visibleCaptures = useMemo(
     () =>
       captures.filter((capture) => {
         const matchesType = filter === "all" || capture.type === filter;
-        const matchesTag = !selectedTag || capture.tags.includes(selectedTag);
-        const matchesQuery = `${capture.title} ${capture.excerpt}`.includes(
+        const matchesTag =
+          !selectedTag || capture.tags.some((tag) => tag.name === selectedTag);
+        const matchesQuery = `${captureTitle(capture)} ${captureExcerpt(capture)}`.includes(
           query,
         );
         return matchesType && matchesTag && matchesQuery;
       }),
-    [filter, query, selectedTag],
+    [captures, filter, query, selectedTag],
   );
 
-  const addTag = () => {
+  const addTag = async () => {
     const name = newTagName.trim();
     if (!name || tags.some((tag) => tag.name === name)) return;
-    setTags((current) => [
-      ...current,
-      { id: name, name, color: "#879287", count: 0 },
-    ]);
     setNewTagName("");
+    await api.post("/tags", { name, color: "#879287" });
+    loadTags();
   };
 
-  const removeTag = (tag: TagData) => {
-    setTags((current) => current.filter((item) => item.id !== tag.id));
+  const removeTag = async (tag: ApiTag) => {
     if (selectedTag === tag.name) setSelectedTag(null);
+    await api.delete(`/tags/${tag.id}`);
+    loadTags();
   };
 
   return (
@@ -106,16 +118,16 @@ export default function CapturesPage() {
                       <Icon />
                     </span>
                     <div>
-                      <b>{capture.title}</b>
-                      <p>{capture.excerpt}</p>
+                      <b>{captureTitle(capture)}</b>
+                      <p>{captureExcerpt(capture)}</p>
                       <div className="capture-tags">
                         {capture.tags.map((tag) => (
-                          <span key={tag}>#{tag}</span>
+                          <span key={tag.id}>#{tag.name}</span>
                         ))}
                       </div>
                     </div>
                     <TypeBadge type={capture.type} />
-                    <time>{capture.date}</time>
+                    <time>{captureDate(capture)}</time>
                   </Link>
                 );
               })}
@@ -163,9 +175,11 @@ export default function CapturesPage() {
                     className="tag-filter-button"
                     onClick={() => setSelectedTag(tag.name)}
                   >
-                    <i style={{ background: tag.color }} />
+                    <i style={{ background: tag.color ?? undefined }} />
                     <span>{tag.name}</span>
-                    <small>{tag.count}</small>
+                    <small>
+                      {captures.filter((c) => c.tags.some((t) => t.id === tag.id)).length}
+                    </small>
                   </button>
                   <button
                     aria-label={`${tag.name} 삭제`}
@@ -176,7 +190,6 @@ export default function CapturesPage() {
                 </div>
               ))}
             </div>
-            {/* TODO(backend): tags 및 capture_tags 생성·수정·삭제 API와 연결해야 합니다. */}
           </aside>
         </div>
       </div>

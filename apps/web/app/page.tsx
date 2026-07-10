@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -7,22 +9,34 @@ import {
   Image,
   Link2,
   Type,
+  Video,
 } from "lucide-react";
-import { AddButton, PageHead, Shell, TypeBadge } from "./components";
-import { captures, projects } from "./data";
+import { useEffect, useState } from "react";
+import { api } from "./api";
+import type { ApiCapture, ApiProject } from "./api-types";
+import { captureDate, captureExcerpt, captureTitle } from "./capture-display";
+import { AddButton, PageHead, Shell, StatusBadge, TypeBadge } from "./components";
 
 const icons = {
   text: Type,
-  image: Image,
+  photo: Image,
   link: Link2,
+  video: Video,
 };
 
 export default function Home() {
+  const [captures, setCaptures] = useState<ApiCapture[]>([]);
+  const [projects, setProjects] = useState<ApiProject[]>([]);
+
+  useEffect(() => {
+    api.get<ApiCapture[]>("/captures").then(setCaptures).catch(() => setCaptures([]));
+    api.get<ApiProject[]>("/projects").then(setProjects).catch(() => setProjects([]));
+  }, []);
+
   return (
     <Shell>
       <div className="page">
         <PageHead
-          eyebrow="2026년 7월 10일, 금요일"
           title={
             <>
               오늘의 생각이
@@ -69,11 +83,11 @@ export default function Home() {
                     <Icon />
                   </span>
                   <div>
-                    <b>{c.title}</b>
-                    <p>{c.excerpt}</p>
+                    <b>{captureTitle(c)}</b>
+                    <p>{captureExcerpt(c)}</p>
                   </div>
                   <TypeBadge type={c.type} />
-                  <time>{c.date}</time>
+                  <time>{captureDate(c)}</time>
                 </Link>
               );
             })}
@@ -97,16 +111,11 @@ export default function Home() {
                 className={`project-card tone-${i}`}
                 key={p.id}
               >
-                <span className="status">
-                  <i />
-                  {p.status}
-                </span>
+                <StatusBadge status={p.status} />
                 <h3>{p.title}</h3>
                 <p>{p.description}</p>
                 <div>
-                  <span>원고 {p.manuscripts.length}</span>
-                  <span>글감 {p.captures}</span>
-                  <time>{p.updated}</time>
+                  <time>{new Date(p.updated_at).toLocaleDateString("ko-KR")}</time>
                 </div>
               </Link>
             ))}

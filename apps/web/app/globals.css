@@ -360,9 +360,13 @@ button {
   color: #737a72;
   background: var(--sage-soft);
 }
-.type-image {
+.type-photo {
   background: #eee6db;
   color: #88745b;
+}
+.type-video {
+  background: #ece3ef;
+  color: #7a5f82;
 }
 .type-link {
   background: #e8ebee;
