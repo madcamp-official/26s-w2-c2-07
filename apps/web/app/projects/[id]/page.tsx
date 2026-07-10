@@ -1,2 +1,27 @@
-import Link from 'next/link'; import {ArrowLeft,ArrowRight,FileText,MoreHorizontal,Plus,Sparkles} from 'lucide-react'; import {notFound} from 'next/navigation'; import {Shell} from '../../components'; import {captures,projects} from '../../data';
-export default async function ProjectDetail({params}:{params:Promise<{id:string}>}){const {id}=await params;const p=projects.find(x=>x.id===id);if(!p)notFound();return <Shell><div className="page"><Link href="/projects" className="back"><ArrowLeft/> 프로젝트</Link><div className="project-hero"><div><span className="status"><i/>{p.status}</span><h1>{p.title}</h1><p>{p.description}</p><small>마지막 수정 {p.updated} · 글감 {p.captures}개</small></div><button className="icon-btn"><MoreHorizontal/></button></div><section className="section manuscript-section"><div className="section-title"><div><FileText/><h2>원고</h2><span className="number">{p.manuscripts.length}</span></div><Link href={`/projects/${p.id}/write/new`}><Plus/> 새 원고</Link></div><div className="manuscripts">{p.manuscripts.map((m,index)=><Link href={`/projects/${p.id}/write/${m.id}`} key={m.id} className="manuscript"><span className="manuscript-no">{String(index+1).padStart(2,'0')}</span><div><h3>{m.title}</h3><p>{m.excerpt}</p><small>{m.updated} · {m.words.toLocaleString()}자</small></div><ArrowRight/></Link>)}</div></section><section className="section"><div className="section-title"><div><Sparkles/><h2>연결된 글감</h2></div><button>글감 연결 <Plus/></button></div><div className="mini-cards">{captures.slice(0,4).map(c=><Link href={`/captures/${c.id}`} key={c.id}><small>{c.type==='text'?'조각글':c.type==='image'?'사진':'링크'} · {c.date}</small><b>{c.title}</b><p>{c.excerpt}</p></Link>)}</div></section>{/* TODO(backend): project, documents, project_captures 조회 및 연결 API와 연결해야 합니다. */}</div></Shell>}
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Shell } from "../../components";
+import { projects } from "../../data";
+import { ProjectDetailClient } from "./project-detail-client";
+
+export default async function ProjectDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const project = projects.find((item) => item.id === id);
+  if (!project) notFound();
+
+  return (
+    <Shell>
+      <div className="page">
+        <Link href="/projects" className="back">
+          <ArrowLeft /> 프로젝트
+        </Link>
+        <ProjectDetailClient project={project} />
+      </div>
+    </Shell>
+  );
+}

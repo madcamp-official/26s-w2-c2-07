@@ -1,2 +1,68 @@
-import Link from 'next/link'; import {ArrowLeft,ExternalLink,Pencil,Trash2} from 'lucide-react'; import {notFound} from 'next/navigation'; import {Shell,TypeBadge} from '../../components'; import {captures} from '../../data';
-export default async function CaptureDetail({params}:{params:Promise<{id:string}>}){const {id}=await params;const c=captures.find(x=>x.id===id);if(!c)notFound();return <Shell><div className="page narrow"><Link href="/captures" className="back"><ArrowLeft/> 글감함으로</Link><article className="detail-paper"><div className="detail-meta"><TypeBadge type={c.type}/><time>{c.date}</time></div>{c.type==='image'&&<div className="photo-placeholder" style={{background:c.color}}><span>기억해 둔 장면</span></div>}<h1>{c.title}</h1><p className="detail-body">{c.excerpt}<br/><br/>처음 마주했을 때의 감각을 오래 기억하고 싶어 남겨둔 기록입니다. 언젠가 한 편의 글을 시작하는 조용한 문장이 되기를 바랍니다.</p>{c.type==='link'&&<a className="link-preview" href="#"><div><small>nook.example.com</small><b>{c.title}</b><p>{c.excerpt}</p></div><ExternalLink/></a>}{c.project&&<div className="connected"><span>연결된 프로젝트</span><Link href="/projects/travel-temperature">{c.project} →</Link></div>}<div className="detail-actions"><button><Pencil/> 수정</button><button className="danger"><Trash2/> 삭제</button></div></article>{/* TODO(backend): capture 상세 조회·수정·삭제 및 연결 프로젝트 API와 연결해야 합니다. */}</div></Shell>}
+import Link from "next/link";
+import { ArrowLeft, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { notFound } from "next/navigation";
+import { Shell, TypeBadge } from "../../components";
+import { captures } from "../../data";
+
+export default async function CaptureDetail({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const c = captures.find((x) => x.id === id);
+  if (!c) notFound();
+  return (
+    <Shell>
+      <div className="page narrow">
+        <Link href="/captures" className="back">
+          <ArrowLeft /> 글감함으로
+        </Link>
+        <article className="detail-paper">
+          <div className="detail-meta">
+            <TypeBadge type={c.type} />
+            <time>{c.date}</time>
+          </div>
+          {c.type === "image" && (
+            <div className="photo-placeholder" style={{ background: c.color }}>
+              <span>기억해 둔 장면</span>
+            </div>
+          )}
+          <h1>{c.title}</h1>
+          <p className="detail-body">
+            {c.excerpt}
+            <br />
+            <br />
+            처음 마주했을 때의 감각을 오래 기억하고 싶어 남겨둔 기록입니다.
+            언젠가 한 편의 글을 시작하는 조용한 문장이 되기를 바랍니다.
+          </p>
+          {c.type === "link" && (
+            <a className="link-preview" href="#">
+              <div>
+                <small>nook.example.com</small>
+                <b>{c.title}</b>
+                <p>{c.excerpt}</p>
+              </div>
+              <ExternalLink />
+            </a>
+          )}
+          {c.project && (
+            <div className="connected">
+              <span>연결된 프로젝트</span>
+              <Link href="/projects/travel-temperature">{c.project} →</Link>
+            </div>
+          )}
+          <div className="detail-actions">
+            <button>
+              <Pencil /> 수정
+            </button>
+            <button className="danger">
+              <Trash2 /> 삭제
+            </button>
+          </div>
+        </article>
+        {/* TODO(backend): capture 상세 조회·수정·삭제 및 연결 프로젝트 API와 연결해야 합니다. */}
+      </div>
+    </Shell>
+  );
+}
