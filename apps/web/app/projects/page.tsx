@@ -1,0 +1,52 @@
+import Link from "next/link";
+import { ArrowRight, FileText, Plus } from "lucide-react";
+import { PageHead, Shell } from "../components";
+import { projects } from "../data";
+
+export default function Projects() {
+  return (
+    <Shell>
+      <div className="page">
+        <PageHead
+          title="프로젝트"
+          desc="모아둔 영감을 여러 편의 원고로 천천히 완성해보세요."
+          action={
+            <Link className="button primary" href="/projects/new">
+              <Plus /> 새 프로젝트
+            </Link>
+          }
+        />
+        <div className="projects-list">
+          {" "}
+          {projects.map((p, i) => (
+            <Link
+              href={`/projects/${p.id}`}
+              className="project-wide"
+              key={p.id}
+            >
+              <div className={`project-cover tone-${i}`}>
+                <span>N</span>
+              </div>
+              <div className="project-info">
+                <span className="status">
+                  <i />
+                  {p.status}
+                </span>
+                <h2>{p.title}</h2>
+                <p>{p.description}</p>
+                <div className="counts">
+                  <span>
+                    <FileText /> 원고 {p.manuscripts.length}
+                  </span>
+                  <span>글감 {p.captures}</span>
+                  <time>마지막 수정 {p.updated}</time>
+                </div>
+              </div>
+              <ArrowRight className="arrow" />
+            </Link>
+          ))}
+        </div>
+      </div>
+    </Shell>
+  );
+}
