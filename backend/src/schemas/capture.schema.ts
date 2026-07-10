@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const captureTypeSchema = z.enum(["text", "photo", "link"]);
+export const captureTypeSchema = z.enum(["text", "photo", "link", "video"]);
 
 export const listCapturesQuerySchema = z.object({
   type: captureTypeSchema.optional(),
