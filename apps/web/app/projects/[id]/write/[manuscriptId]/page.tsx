@@ -23,6 +23,7 @@ import type {
 import { captureExcerpt, captureTitle } from "../../../../capture-display";
 import { captureTypeLabels } from "../../../../components";
 import { CaptureSearchControls } from "../../../../components/capture-search-controls";
+import { CaptureMedia } from "../../../../components/capture-media";
 import { type CaptureType } from "../../../../data";
 
 const referenceIcons: Record<CaptureType, typeof Type> = {
@@ -260,13 +261,25 @@ function CaptureReference({
 }) {
   const Icon = referenceIcons[capture.type];
   return (
-    <article>
+    <article className="reference-capture-card">
       <span>
         <Icon />
       </span>
       <div>
+        <CaptureMedia capture={capture} variant="reference" />
         <small>{captureTypeLabels[capture.type]}</small>
-        <b>{captureTitle(capture)}</b>
+        {capture.type === "link" && capture.url ? (
+          <a
+            className="reference-link"
+            href={capture.url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {captureTitle(capture)} ↗
+          </a>
+        ) : (
+          <b>{captureTitle(capture)}</b>
+        )}
         <p>{captureExcerpt(capture)}</p>
         <button onClick={() => void onAction(capture)}>{actionLabel}</button>
       </div>

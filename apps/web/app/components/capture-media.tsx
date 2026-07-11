@@ -3,7 +3,7 @@ import type { ApiCapture } from "../api-types";
 
 interface CaptureMediaProps {
   capture: ApiCapture;
-  variant: "detail" | "card";
+  variant: "detail" | "card" | "reference";
 }
 
 function assetUrl(capture: ApiCapture) {
