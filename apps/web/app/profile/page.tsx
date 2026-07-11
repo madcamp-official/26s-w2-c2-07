@@ -1,78 +1,78 @@
 "use client";
 
-import {
-  BookOpen,
-  FileText,
-  FolderKanban,
-  Mail,
-  Pencil,
-  Trash2,
-  X,
-} from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
+import { Mail, Pencil, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { api } from "../api";
+import type { ApiProfile } from "../api-types";
 import { PageHead, Shell } from "../components";
-import { profile as initialProfile } from "../data";
+import { supabase } from "../supabase-client";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState(initialProfile);
-  const [draft, setDraft] = useState(initialProfile);
+  const router = useRouter();
+  const [profile, setProfile] = useState<ApiProfile | null>(null);
+  const [draft, setDraft] = useState({ displayName: "", avatarUrl: "" });
   const [editing, setEditing] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const openEditor = () => {
-    setDraft(profile);
-    setEditing(true);
-  };
-
-  const saveProfile = (event: React.FormEvent) => {
-    event.preventDefault();
-    setProfile({
-      ...draft,
-      initial: draft.name.trim().slice(-1) || profile.initial,
+  const load = () =>
+    api.get<ApiProfile>("/me").then((result) => {
+      setProfile(result);
+      setDraft({
+        displayName: result.display_name ?? "",
+        avatarUrl: result.avatar_url ?? "",
+      });
     });
-    setEditing(false);
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      await api.patch("/me", draft);
+      await load();
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const deleteAccount = async () => {
+    await api.delete("/me");
+    if (api.isUsingMockData()) {
+      alert("API 연결이 필요합니다");
+      return;
+    }
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
+  if (!profile) return null;
+  const initial = profile.display_name?.trim().slice(-1) || "?";
 
   return (
     <Shell>
       <div className="page narrow">
         <PageHead
           title="내 프로필"
-          desc="Nook에서 쌓아온 나의 기록과 계정 정보를 확인하세요."
+          desc="현재 로그인한 계정과 Nook 프로필 정보를 관리하세요."
         />
         <section className="profile-card">
-          <div className="big-avatar">{profile.initial}</div>
+          <div className="big-avatar">{initial}</div>
           <div>
-            <h2>{profile.name}</h2>
+            <h2>{profile.display_name ?? "이름 없음"}</h2>
             <p>
               <Mail /> {profile.email}
             </p>
-            <small>{profile.bio}</small>
+            <small>{profile.provider} 계정으로 로그인됨</small>
           </div>
-          <button className="button ghost" onClick={openEditor}>
+          <button className="button ghost" onClick={() => setEditing(true)}>
             <Pencil /> 프로필 수정
           </button>
         </section>
-
-        <div className="stats">
-          <div>
-            <BookOpen />
-            <b>{profile.captureCount}</b>
-            <span>모은 글감</span>
-          </div>
-          <div>
-            <FolderKanban />
-            <b>{profile.projectCount}</b>
-            <span>프로젝트</span>
-          </div>
-          <div>
-            <FileText />
-            <b>{profile.manuscriptCount}</b>
-            <span>원고</span>
-          </div>
-        </div>
-
         <section className="settings-card">
           <h3>계정 정보</h3>
           <div>
@@ -81,30 +81,25 @@ export default function ProfilePage() {
           </div>
           <div>
             <span>로그인 방식</span>
-            <b>Google</b>
-          </div>
-          <div>
-            <span>가입일</span>
-            <b>{profile.joined}</b>
+            <b>{profile.provider}</b>
           </div>
           <div className="danger-zone">
             <div>
               <b>회원 탈퇴</b>
-              <small>모든 글감과 프로젝트가 영구적으로 삭제됩니다.</small>
+              <small>계정 삭제 API가 준비된 뒤 사용할 수 있습니다.</small>
             </div>
-            <button onClick={() => setDeleteConfirmOpen(true)}>
+            <button onClick={deleteAccount}>
               <Trash2 /> 회원 탈퇴
             </button>
           </div>
         </section>
-
         {editing && (
           <div className="modal-backdrop">
-            <form className="dialog" onSubmit={saveProfile}>
+            <form className="dialog" onSubmit={save}>
               <div className="dialog-heading">
                 <div>
                   <h2>프로필 수정</h2>
-                  <p>Nook에서 사용할 개인 정보를 변경하세요.</p>
+                  <p>로그인 계정에 연결된 공개 정보를 변경하세요.</p>
                 </div>
                 <button
                   type="button"
@@ -117,34 +112,28 @@ export default function ProfilePage() {
               <label>
                 이름
                 <input
-                  value={draft.name}
+                  value={draft.displayName}
                   onChange={(event) =>
-                    setDraft({ ...draft, name: event.target.value })
+                    setDraft({ ...draft, displayName: event.target.value })
                   }
                   required
-                  maxLength={30}
+                  maxLength={100}
+                />
+              </label>
+              <label>
+                프로필 이미지 URL
+                <input
+                  type="url"
+                  value={draft.avatarUrl}
+                  onChange={(event) =>
+                    setDraft({ ...draft, avatarUrl: event.target.value })
+                  }
                 />
               </label>
               <label>
                 이메일
-                <input
-                  value={draft.email}
-                  type="email"
-                  onChange={(event) =>
-                    setDraft({ ...draft, email: event.target.value })
-                  }
-                  required
-                />
-              </label>
-              <label>
-                소개
-                <textarea
-                  value={draft.bio}
-                  onChange={(event) =>
-                    setDraft({ ...draft, bio: event.target.value })
-                  }
-                  maxLength={120}
-                />
+                <input value={profile.email} readOnly disabled />
+                <small>이메일은 Google 계정에서 관리됩니다.</small>
               </label>
               <div className="form-actions">
                 <button
@@ -154,33 +143,13 @@ export default function ProfilePage() {
                 >
                   취소
                 </button>
-                <button className="button primary">저장</button>
+                <button className="button primary" disabled={saving}>
+                  {saving ? "저장 중…" : "저장"}
+                </button>
               </div>
             </form>
           </div>
         )}
-
-        {deleteConfirmOpen && (
-          <div className="modal-backdrop">
-            <section className="dialog confirm-dialog">
-              <Trash2 />
-              <h2>정말 탈퇴할까요?</h2>
-              <p>계정과 모든 기록이 영구 삭제되며 되돌릴 수 없습니다.</p>
-              <div className="form-actions">
-                <button
-                  className="button ghost"
-                  onClick={() => setDeleteConfirmOpen(false)}
-                >
-                  취소
-                </button>
-                <Link className="button danger-button" href="/login">
-                  회원 탈퇴
-                </Link>
-              </div>
-            </section>
-          </div>
-        )}
-        {/* TODO(backend): profiles 수정, 이메일 변경 및 Supabase Auth 사용자 삭제 API와 연결해야 합니다. */}
       </div>
     </Shell>
   );

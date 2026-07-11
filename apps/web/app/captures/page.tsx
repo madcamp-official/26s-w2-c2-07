@@ -1,6 +1,16 @@
 "use client";
 
-import { Image, Link2, Plus, Search, Tag, Trash2, Type, Video, X } from "lucide-react";
+import {
+  Image,
+  Link2,
+  Plus,
+  Search,
+  Tag,
+  Trash2,
+  Type,
+  Video,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
@@ -27,10 +37,16 @@ export default function CapturesPage() {
   const [newTagName, setNewTagName] = useState("");
 
   const loadCaptures = () => {
-    api.get<ApiCapture[]>("/captures").then(setCaptures).catch(() => setCaptures([]));
+    api
+      .get<ApiCapture[]>("/captures")
+      .then(setCaptures)
+      .catch(() => setCaptures([]));
   };
   const loadTags = () => {
-    api.get<ApiTag[]>("/tags").then(setTags).catch(() => setTags([]));
+    api
+      .get<ApiTag[]>("/tags")
+      .then(setTags)
+      .catch(() => setTags([]));
   };
 
   useEffect(() => {
@@ -44,9 +60,8 @@ export default function CapturesPage() {
         const matchesType = filter === "all" || capture.type === filter;
         const matchesTag =
           !selectedTag || capture.tags.some((tag) => tag.name === selectedTag);
-        const matchesQuery = `${captureTitle(capture)} ${captureExcerpt(capture)}`.includes(
-          query,
-        );
+        const matchesQuery =
+          `${captureTitle(capture)} ${captureExcerpt(capture)}`.includes(query);
         return matchesType && matchesTag && matchesQuery;
       }),
     [captures, filter, query, selectedTag],
@@ -178,7 +193,11 @@ export default function CapturesPage() {
                     <i style={{ background: tag.color ?? undefined }} />
                     <span>{tag.name}</span>
                     <small>
-                      {captures.filter((c) => c.tags.some((t) => t.id === tag.id)).length}
+                      {
+                        captures.filter((c) =>
+                          c.tags.some((t) => t.id === tag.id),
+                        ).length
+                      }
                     </small>
                   </button>
                   <button

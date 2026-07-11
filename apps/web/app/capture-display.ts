@@ -8,7 +8,7 @@ export function captureTitle(c: ApiCapture): string {
 }
 
 export function captureExcerpt(c: ApiCapture): string {
-  if (c.type === "link") return c.link_description || c.content || c.url || "";
+  if (c.type === "link") return c.content || c.url || "";
   return c.content ?? "";
 }
 

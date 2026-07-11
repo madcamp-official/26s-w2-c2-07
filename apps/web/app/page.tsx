@@ -15,7 +15,13 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import type { ApiCapture, ApiProject } from "./api-types";
 import { captureDate, captureExcerpt, captureTitle } from "./capture-display";
-import { AddButton, PageHead, Shell, StatusBadge, TypeBadge } from "./components";
+import {
+  AddButton,
+  PageHead,
+  Shell,
+  StatusBadge,
+  TypeBadge,
+} from "./components";
 
 const icons = {
   text: Type,
@@ -29,8 +35,14 @@ export default function Home() {
   const [projects, setProjects] = useState<ApiProject[]>([]);
 
   useEffect(() => {
-    api.get<ApiCapture[]>("/captures").then(setCaptures).catch(() => setCaptures([]));
-    api.get<ApiProject[]>("/projects").then(setProjects).catch(() => setProjects([]));
+    api
+      .get<ApiCapture[]>("/captures")
+      .then(setCaptures)
+      .catch(() => setCaptures([]));
+    api
+      .get<ApiProject[]>("/projects")
+      .then(setProjects)
+      .catch(() => setProjects([]));
   }, []);
 
   return (
@@ -115,7 +127,9 @@ export default function Home() {
                 <h3>{p.title}</h3>
                 <p>{p.description}</p>
                 <div>
-                  <time>{new Date(p.updated_at).toLocaleDateString("ko-KR")}</time>
+                  <time>
+                    {new Date(p.updated_at).toLocaleDateString("ko-KR")}
+                  </time>
                 </div>
               </Link>
             ))}

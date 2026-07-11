@@ -15,7 +15,10 @@ export default function NewProject() {
     if (!title.trim()) return;
     setSaving(true);
     try {
-      const project = await api.post<ApiProject>("/projects", { title, description });
+      const project = await api.post<ApiProject>("/projects", {
+        title,
+        description,
+      });
       r.push(`/projects/${project.id}`);
     } finally {
       setSaving(false);
