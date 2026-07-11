@@ -2,7 +2,9 @@
 
 import {
   Image,
+  LayoutGrid,
   Link2,
+  List,
   Plus,
   Search,
   Tag,
@@ -17,6 +19,7 @@ import { api } from "../api";
 import type { ApiCapture, ApiTag } from "../api-types";
 import { captureExcerpt, captureTitle, captureDate } from "../capture-display";
 import { AddButton, PageHead, Shell, TypeBadge } from "../components";
+import { CaptureMedia } from "../components/capture-media";
 import { type CaptureType } from "../data";
 
 const captureIcons = { text: Type, photo: Image, link: Link2, video: Video };
@@ -27,7 +30,6 @@ const filters: Array<{ value: "all" | CaptureType; label: string }> = [
   { value: "video", label: "동영상" },
   { value: "link", label: "링크" },
 ];
-
 export default function CapturesPage() {
   const [filter, setFilter] = useState<"all" | CaptureType>("all");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -35,6 +37,7 @@ export default function CapturesPage() {
   const [captures, setCaptures] = useState<ApiCapture[]>([]);
   const [tags, setTags] = useState<ApiTag[]>([]);
   const [newTagName, setNewTagName] = useState("");
+  const [view, setView] = useState<"list" | "card">("list");
 
   const loadCaptures = () => {
     api
@@ -91,7 +94,7 @@ export default function CapturesPage() {
         />
         <div className="capture-library-layout">
           <main>
-            <div className="tools">
+            <div className="tools capture-library-tools">
               <div className="filters">
                 {filters.map(({ value, label }) => (
                   <button
@@ -103,14 +106,32 @@ export default function CapturesPage() {
                   </button>
                 ))}
               </div>
-              <label className="search">
-                <Search />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="글감 검색"
-                />
-              </label>
+              <div className="capture-library-search-actions">
+                <label className="search">
+                  <Search />
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="글감 검색"
+                  />
+                </label>
+                <div className="view-toggle" aria-label="글감 보기 방식">
+                  <button
+                    className={view === "list" ? "active" : ""}
+                    onClick={() => setView("list")}
+                    aria-label="목록 보기"
+                  >
+                    <List />
+                  </button>
+                  <button
+                    className={view === "card" ? "active" : ""}
+                    onClick={() => setView("card")}
+                    aria-label="카드 보기"
+                  >
+                    <LayoutGrid />
+                  </button>
+                </div>
+              </div>
             </div>
             {selectedTag && (
               <button
@@ -120,7 +141,7 @@ export default function CapturesPage() {
                 #{selectedTag} <X />
               </button>
             )}
-            <div className="capture-list roomy">
+            <div className={`capture-list roomy capture-${view}-view`}>
               {visibleCaptures.map((capture) => {
                 const Icon = captureIcons[capture.type];
                 return (
@@ -132,6 +153,7 @@ export default function CapturesPage() {
                     <span className={`capture-icon visual-${capture.type}`}>
                       <Icon />
                     </span>
+                    <CaptureMedia capture={capture} variant="card" />
                     <div>
                       <b>{captureTitle(capture)}</b>
                       <p>{captureExcerpt(capture)}</p>

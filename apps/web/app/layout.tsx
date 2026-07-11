@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./responsive.css";
+import "./styles/capture-browser.css";
 
 export const metadata: Metadata = {
   title: "Nook — 나만의 조용한 글쓰기 공간",

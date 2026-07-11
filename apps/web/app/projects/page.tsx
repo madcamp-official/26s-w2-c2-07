@@ -69,15 +69,12 @@ function ProjectSection({
         </div>
       </div>
       <div className="projects-list">
-        {projects.map((project, index) => (
+        {projects.map((project) => (
           <Link
             href={`/projects/${project.id}`}
             className="project-wide"
             key={project.id}
           >
-            <div className={`project-cover tone-${index % 3}`}>
-              <span>N</span>
-            </div>
             <div className="project-info">
               <StatusBadge status={project.status} />
               <h2>{project.title}</h2>

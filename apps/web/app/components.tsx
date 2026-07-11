@@ -44,7 +44,7 @@ const projectStatusLabels: Record<ProjectStatus, string> = {
 
 export function StatusBadge({ status }: { status: ProjectStatus }) {
   return (
-    <span className="status">
+    <span className={`status status-${status}`}>
       <i />
       {projectStatusLabels[status]}
     </span>
