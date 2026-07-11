@@ -12,6 +12,7 @@ import {
   captureTitle,
 } from "../../capture-display";
 import { Shell, TypeBadge } from "../../components";
+import { CaptureMedia } from "../../components/capture-media";
 
 export default function CaptureDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -105,6 +106,7 @@ export default function CaptureDetailPage() {
               <span key={tag.id}>#{tag.name}</span>
             ))}
           </div>
+          <CaptureMedia capture={capture} variant="detail" />
           <p className="detail-body">{captureExcerpt(capture)}</p>
           {capture.type === "link" && capture.url && (
             <a

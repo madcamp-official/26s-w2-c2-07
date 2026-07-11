@@ -6,7 +6,6 @@ import {
   FileText,
   MoreHorizontal,
   Plus,
-  Search,
   Sparkles,
   Trash2,
   X,
@@ -23,6 +22,8 @@ import type {
 } from "../../api-types";
 import { captureExcerpt, captureTitle } from "../../capture-display";
 import { StatusBadge } from "../../components";
+import { CaptureSearchControls } from "../../components/capture-search-controls";
+import type { CaptureType } from "../../data";
 
 type ExportFormat = "pdf" | "docx" | "txt";
 
@@ -40,6 +41,8 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
   const [allCaptures, setAllCaptures] = useState<ApiCapture[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
+  const [captureType, setCaptureType] = useState<"all" | CaptureType>("all");
+  const [tagId, setTagId] = useState<string>("all");
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -124,6 +127,8 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
       ),
     );
     setQuery("");
+    setCaptureType("all");
+    setTagId("all");
     setLinking(true);
   };
 
@@ -157,14 +162,27 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
     URL.revokeObjectURL(url);
   };
 
+  const availableTags = useMemo(() => {
+    const unique = new Map<string, string>();
+    allCaptures.forEach((capture) =>
+      capture.tags.forEach((tag) => unique.set(tag.id, tag.name)),
+    );
+    return [...unique.entries()];
+  }, [allCaptures]);
   const visibleCaptures = useMemo(
     () =>
-      allCaptures.filter((capture) =>
-        `${captureTitle(capture)} ${captureExcerpt(capture)}`
-          .toLowerCase()
-          .includes(query.toLowerCase()),
-      ),
-    [allCaptures, query],
+      allCaptures.filter((capture) => {
+        const matchesQuery =
+          `${captureTitle(capture)} ${captureExcerpt(capture)}`
+            .toLowerCase()
+            .includes(query.toLowerCase());
+        const matchesType =
+          captureType === "all" || capture.type === captureType;
+        const matchesTag =
+          tagId === "all" || capture.tags.some((tag) => tag.id === tagId);
+        return matchesQuery && matchesType && matchesTag;
+      }),
+    [allCaptures, captureType, query, tagId],
   );
   if (!project) return null;
 
@@ -249,7 +267,15 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
             <h2>원고</h2>
             <span className="number">{documents.length}</span>
           </div>
-          <button onClick={createDocument} disabled={creatingDocument}>
+          <button
+            onClick={createDocument}
+            disabled={creatingDocument || project.status === "done"}
+            title={
+              project.status === "done"
+                ? "완료된 프로젝트에는 원고를 추가할 수 없습니다."
+                : undefined
+            }
+          >
             <Plus /> {creatingDocument ? "추가 중…" : "새 원고"}
           </button>
         </div>
@@ -281,7 +307,15 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
             <Sparkles />
             <h2>연결된 글감</h2>
           </div>
-          <button onClick={openLinkPicker}>
+          <button
+            onClick={openLinkPicker}
+            disabled={project.status === "done"}
+            title={
+              project.status === "done"
+                ? "완료된 프로젝트에는 글감을 추가할 수 없습니다."
+                : undefined
+            }
+          >
             글감 연결 <Plus />
           </button>
         </div>
@@ -310,14 +344,15 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                 <X />
               </button>
             </div>
-            <label className="search">
-              <Search />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="글감 검색"
-              />
-            </label>
+            <CaptureSearchControls
+              query={query}
+              type={captureType}
+              tagId={tagId}
+              tags={availableTags}
+              onQueryChange={setQuery}
+              onTypeChange={setCaptureType}
+              onTagChange={setTagId}
+            />
             <div className="capture-picker-list">
               {visibleCaptures.map((capture) => (
                 <button

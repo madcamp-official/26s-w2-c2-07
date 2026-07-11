@@ -15,13 +15,7 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import type { ApiCapture, ApiProject } from "./api-types";
 import { captureDate, captureExcerpt, captureTitle } from "./capture-display";
-import {
-  AddButton,
-  PageHead,
-  Shell,
-  StatusBadge,
-  TypeBadge,
-} from "./components";
+import { PageHead, Shell, StatusBadge, TypeBadge } from "./components";
 
 const icons = {
   text: Type,
@@ -57,7 +51,6 @@ export default function Home() {
             </>
           }
           desc="스치는 영감을 모으고, 나만의 문장으로 천천히 이어가세요."
-          action={<AddButton />}
         />
         <section className="quick">
           <div className="quick-mark">

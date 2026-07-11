@@ -13,6 +13,14 @@ export interface ApiCapture {
   link_title: string | null;
   link_description: string | null;
   link_image_url: string | null;
+  asset_url?: string | null;
+  thumbnail_url?: string | null;
+  assets?: Array<{
+    id?: string;
+    url?: string | null;
+    signed_url?: string | null;
+    storage_path?: string;
+  }>;
   created_at: string;
   updated_at: string;
   tags: ApiCaptureTag[];
