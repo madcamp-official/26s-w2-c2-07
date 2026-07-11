@@ -6,7 +6,7 @@ export const createDocumentSchema = z.object({
 });
 
 export const updateDocumentSchema = z.object({
-  title: z.string().min(1).max(200).optional(),
+  title: z.string().max(200).optional(), // 자동저장 도중 제목을 잠깐 지운 빈 문자열도 유효한 상태다
   content: z.string().max(200_000).optional(),
 });
 

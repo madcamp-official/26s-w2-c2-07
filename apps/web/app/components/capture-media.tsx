@@ -6,20 +6,12 @@ interface CaptureMediaProps {
   variant: "detail" | "card";
 }
 
-function mediaUrl(capture: ApiCapture) {
-  if (capture.type === "link") return capture.link_image_url;
-  if (capture.type === "video") {
-    return (
-      capture.thumbnail_url ??
-      capture.asset_url ??
-      capture.assets?.[0]?.url ??
-      capture.assets?.[0]?.signed_url
-    );
-  }
+function assetUrl(capture: ApiCapture) {
   return (
     capture.asset_url ??
     capture.assets?.[0]?.url ??
-    capture.assets?.[0]?.signed_url
+    capture.assets?.[0]?.signed_url ??
+    capture.image_url
   );
 }
 
@@ -31,12 +23,11 @@ export function CaptureMedia({ capture, variant }: CaptureMediaProps) {
   )
     return null;
 
-  const source = mediaUrl(capture);
   const label =
     capture.type === "photo"
       ? "사진 글감"
       : capture.type === "video"
-        ? "영상 썸네일"
+        ? "영상 글감"
         : "링크 썸네일";
   const PlaceholderIcon =
     capture.type === "photo"
@@ -45,10 +36,37 @@ export function CaptureMedia({ capture, variant }: CaptureMediaProps) {
         ? Film
         : Link2;
 
+  const className = `capture-media capture-media-${variant} media-${capture.type}`;
+
+  if (capture.type === "video") {
+    const videoSrc = assetUrl(capture);
+    if (!videoSrc) {
+      return (
+        <div className={className}>
+          <div className="capture-media-placeholder">
+            <PlaceholderIcon />
+            <span>{label}</span>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className={className}>
+        <video
+          src={videoSrc}
+          poster={capture.thumbnail_url ?? undefined}
+          controls
+          preload="metadata"
+        />
+      </div>
+    );
+  }
+
+  const source =
+    capture.type === "link" ? capture.link_image_url : assetUrl(capture);
+
   return (
-    <div
-      className={`capture-media capture-media-${variant} media-${capture.type}`}
-    >
+    <div className={className}>
       {source ? (
         <img src={source} alt={label} />
       ) : (

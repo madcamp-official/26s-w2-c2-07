@@ -109,7 +109,7 @@ Expo Mobile ─┘                         ├─ Zod 입력 검증
 
 ### 데이터 구조
 
-> 아래 내용은 현재 스키마를 기준으로 다음 변경을 반영한 명세이다. 아직 실제 마이그레이션에는 적용하지 않았다.
+> 아래 내용은 실제 마이그레이션(`apps/backend/supabase/migrations/0001~0005`) 기준 현재 스키마다.
 
 ```text
 auth.users
@@ -127,12 +127,13 @@ auth.users
 #### 핵심 테이블
 
 ```sql
-create table public.profiles (
+create table profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   display_name text,
   avatar_url text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  notify_enabled boolean not null default true,   
+  dark_editor boolean not null default false       
 );
 
 create table public.user_settings (
@@ -143,7 +144,7 @@ create table public.user_settings (
   updated_at timestamptz not null default now()
 );
 
-create table public.captures (
+create table captures (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   type text not null check (type in ('text', 'photo', 'link', 'video')),
@@ -153,34 +154,33 @@ create table public.captures (
   link_description text,
   link_image_url text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  check (type <> 'link' or url is not null)
+  updated_at timestamptz not null default now()
 );
 
-create table public.capture_assets (
+create table capture_assets (
   id uuid primary key default gen_random_uuid(),
-  capture_id uuid not null references public.captures (id) on delete cascade,
+  capture_id uuid not null references captures (id) on delete cascade,
   storage_path text not null,
   created_at timestamptz not null default now()
 );
 
-create table public.tags (
+create table tags (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  name text not null check (char_length(name) between 1 and 30),
+  name text not null,
   color text,
   created_at timestamptz not null default now(),
   unique (user_id, name)
 );
 
-create table public.capture_tags (
-  capture_id uuid not null references public.captures (id) on delete cascade,
-  tag_id uuid not null references public.tags (id) on delete cascade,
+create table capture_tags (
+  capture_id uuid not null references captures (id) on delete cascade,
+  tag_id uuid not null references tags (id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (capture_id, tag_id)
 );
 
-create table public.projects (
+create table projects (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   title text not null,
@@ -190,94 +190,88 @@ create table public.projects (
   updated_at timestamptz not null default now()
 );
 
-create table public.project_captures (
-  project_id uuid not null references public.projects (id) on delete cascade,
-  capture_id uuid not null references public.captures (id) on delete cascade,
+create table project_captures (
+  project_id uuid not null references projects (id) on delete cascade,
+  capture_id uuid not null references captures (id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (project_id, capture_id)
 );
 
-create table public.documents (
+create table documents (
   id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references public.projects (id) on delete cascade,
-  client_request_id uuid not null,
+  project_id uuid not null references projects (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
   title text not null default '제목 없음',
   content text not null default '',
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (project_id, client_request_id)
+  updated_at timestamptz not null default now()
 );
 ```
 
 #### 데이터 규칙
 
-- `profiles.id = auth.users.id`이며 가입 트리거가 Google 이름과 프로필 사진을 초기화한다. 이메일은 중복 저장하지 않고 Auth 정보와 프로필을 `/me`에서 결합한다.
-- 링크 글감의 사용자 메모는 `captures.content`, 외부 페이지 설명은 `link_description`에 저장한다. 미리보기가 사용자 메모를 덮어쓰면 안 된다.
-- 한 글감에는 여러 태그를 연결할 수 있다. `(user_id, name)`과 `(capture_id, tag_id)` 고유 제약으로 중복을 막는다.
-- 프로젝트 상태는 `active`, `done`만 사용하며 `archived`는 제거한다.
-- `documents.client_request_id`는 원고 추가 버튼 중복 클릭과 네트워크 재시도로 인한 중복 원고를 막는 멱등성 키다.
-- 사용자 설정에는 실제 선택 가능한 알림·편집 테마만 저장한다. 모바일 동기화와 자동 저장 설정 컬럼은 만들지 않는다.
-- `profiles`, `user_settings`, `captures`, `tags`, `projects`는 직접 소유자 기준 RLS를 사용한다. 연결 테이블은 부모 글감 또는 프로젝트의 소유권을 검사한다.
+- `profiles.id = auth.users.id`이며 가입 트리거가 Google 이름과 프로필 사진을 초기화한다. 이메일·로그인 provider는 저장하지 않고 `GET/PATCH/DELETE /me`에서 Supabase Auth Admin API(`auth.admin.getUserById`) 결과와 조합해서 내려준다.
+- 알림·다크 에디터 설정은 별도 테이블이 아니라 `profiles.notify_enabled` / `profiles.dark_editor` 컬럼에 저장하고, `/settings`(camelCase: `captureAlertsEnabled`, `darkEditorEnabled`)로만 노출한다. 모바일 동기화와 자동 저장은 끌 수 있는 컬럼 자체를 두지 않아 항상 켜져 있다.
+- 링크 글감의 사용자 메모는 `captures.content`, 외부 페이지 설명은 `link_description`에 저장한다. 미리보기는 생성 시 최초 한 번, 그리고 수정 요청의 `url`이 저장된 값과 다를 때만 다시 가져와 갱신한다(변경 없으면 재크롤링하지 않음).
+- 한 글감에는 여러 태그를 연결할 수 있다. `(user_id, name)`과 `(capture_id, tag_id)` 고유 제약으로 중복을 막으며, 글감 생성·수정 요청의 `tagIds`는 해당 글감의 태그 목록을 통째로 교체하는 방식으로 동작한다(부분 추가/삭제 아님).
+- 프로젝트 상태는 `active`, `done`만 사용한다. `archived`는 제거했고, 기존에 `archived`였던 로우는 마이그레이션에서 `done`으로 이관했다.
+- `documents.user_id`는 매 요청마다 `projects`를 조회해 소유권을 확인하던 이중 쿼리를 없애기 위해 비정규화한 컬럼이다(자동 저장처럼 자주 호출되는 경로의 지연을 줄이는 목적).
+- **알려진 한계:** 프론트는 원고 생성 시 `clientRequestId`를 함께 보내지만, 서버는 아직 이 값으로 중복 생성을 막지 않는다. 현재는 프론트가 요청 중 버튼을 비활성화하는 것으로만 완화되어 있고(같은 탭 연타는 막지만 네트워크 재시도·다중 탭까지는 못 막음), 서버 측 멱등 처리는 TODO로 남아 있다.
+- `profiles`, `captures`, `tags`, `projects`, `documents`는 직접 소유자 기준 RLS를 사용한다. 연결 테이블은 부모 글감 또는 프로젝트의 소유권을 검사한다. API 서버는 service-role 키로 RLS를 우회하므로, 실제 소유권 검증은 각 repository 함수가 쿼리에 `user_id`/`project_id` 필터를 직접 거는 방식으로 이루어진다.
 
-#### 공통 글감 DTO
+#### 공통 글감 응답 포맷
 
-연결된 글감 포맷이 화면마다 달라지는 문제를 방지하기 위해 글감 목록·상세·프로젝트 연결·원고 검색에서 같은 평탄화 응답을 사용한다.
+`/captures`, `/captures/:id`, `/projects/:id/captures`는 모두 동일한 형태로 통일되어 있다(글감이 화면마다 다른 모양으로 오는 문제 방지). 필드명은 스펙 초안의 camelCase 대신 프론트가 실제로 구현된 **snake_case 계약**을 그대로 따른다.
 
 ```ts
-interface Capture {
+interface ApiCapture {
   id: string;
-  userId: string;
+  user_id: string;
   type: 'text' | 'photo' | 'link' | 'video';
   content: string | null;
   url: string | null;
-  linkTitle: string | null;
-  linkDescription: string | null;
-  linkImageUrl: string | null;
+  link_title: string | null;
+  link_description: string | null;
+  link_image_url: string | null;   // 외부 링크 미리보기 이미지
+  image_url: string | null;         // 사진 글감이 Storage에 올린 파일의 서명된 URL (1시간 유효)
   tags: Array<{ id: string; name: string; color: string | null }>;
-  isLinked?: boolean;
-  createdAt: string;
-  updatedAt: string;
+  isLinked?: boolean;               // 아직 서버에서 채우지 않음 — 프론트가 별도로 계산
+  created_at: string;
+  updated_at: string;
 }
 ```
 
 ### API / 외부 서비스 연동
 
-모든 엔드포인트는 `/api` 기준이며 `Authorization: Bearer <supabase_access_token>`을 사용한다. 오류 응답은 `{ "error": { "code", "message", "details" } }` 형식으로 통일한다.
+모든 엔드포인트는 `Authorization: Bearer <supabase_access_token>`을 사용한다. 오류 응답은 `{ "error": { "message", "details" } }` 형식이다
 
 | Method / 방식 | Endpoint / 서비스 | 설명 | 요청 | 응답 | 비고 |
 |---|---|---|---|---|---|
-| GET | `/me` | Auth 계정·프로필·설정 결합 조회 | - | 사용자·설정 | 이메일은 Auth 기준 |
-| PATCH | `/me` | 이름·프로필 사진 수정 | `displayName`, `avatarUrl` | 사용자 | 이메일 변경 제외 |
-| GET/PATCH | `/settings` | 실제 서비스 설정 조회·저장 | 알림, 편집 테마 | 설정 | 동기화·자동 저장 제외 |
-| GET | `/captures` | 모든 내 글감 검색·필터 | `q`, `type`, `tagIds`, `projectId`, `cursor` | `Capture[]` | 원고·연결 모달 공용 |
-| POST | `/captures` | 글감과 복수 태그 생성 | `type`, `content`, `url`, `tagIds` | `Capture` | 링크 메모 보존 |
-| GET | `/captures/:id` | 글감 상세 조회 | - | `Capture` | 소유권 검증 |
-| PATCH | `/captures/:id` | 글감과 태그 수정 | `content`, `url`, `tagIds` | `Capture` | URL 변경 시 미리보기 갱신 |
-| DELETE | `/captures/:id` | 글감 삭제 | - | `204` | 자산·연결 cascade |
-| POST | `/captures/:id/assets/upload-url` | 사진 업로드 URL 발급 | 파일명·MIME | signed URL | 기존 API 유지 |
-| POST | `/captures/:id/assets/complete` | 업로드 완료 기록 | storage path | asset | 기존 API 유지 |
-| GET/POST | `/tags` | 내 태그 목록·생성 | `name`, `color` | 태그 | 글감 작성 중 생성 가능 |
-| PATCH/DELETE | `/tags/:id` | 태그 수정·삭제 | `name`, `color` | 태그 또는 `204` | 연결 자동 해제 |
-| POST/DELETE | `/captures/:id/tags[...]` | 태그 연결·해제 | `tagId` | `204` | 기존 API 유지 |
-| POST | `/link-preview` | 외부 링크 정보 추출 | `url` | 제목·설명·이미지 | `content` 변경 금지 |
-| GET/POST | `/projects` | 상태별 목록·프로젝트 생성 | `status` 또는 프로젝트 정보 | 프로젝트 | 목록은 상태별 섹션 |
-| GET/PATCH/DELETE | `/projects/:id` | 상세·이름/설명 수정·삭제 | `title`, `description` | 프로젝트 | 상태 수정 제외 |
-| PATCH | `/projects/:id/status` | 전용 버튼으로 상태 전환 | `active` 또는 `done` | 프로젝트 | `archived` 금지 |
-| GET | `/projects/:id/captures` | 연결 글감 조회 | - | `Capture[]` | 응답 평탄화 |
+| GET | `/me` | Auth 계정·프로필·설정 결합 조회 | - | 사용자(+`settings`) | `email`/`provider`는 Auth Admin API에서 조합 |
+| PATCH | `/me` | 이름·프로필 사진 수정 | `displayName`, `avatarUrl` | 사용자 | 이메일 변경 불가 |
+| DELETE | `/me` | 계정 삭제 | - | `204` | `auth.users` 삭제로 전 데이터 cascade + Storage 파일 정리 |
+| GET/PATCH | `/settings` | 알림·다크 에디터 설정 조회·저장 | `captureAlertsEnabled`, `darkEditorEnabled` | 설정 | `/me`와 별도 리소스로 분리 |
+| GET | `/captures` | 내 글감 목록 | `type` | `ApiCapture[]` | `q`/`tagIds`/`projectId`/`cursor`는 아직 미구현 — 프론트가 전체 목록을 받아 클라이언트에서 검색·필터링 |
+| POST | `/captures` | 글감과 태그 동시 생성 | `type`, `content`, `url`, `tagIds` | `ApiCapture` | 링크는 미리보기 자동 조회 |
+| GET | `/captures/:id` | 글감 상세 조회 | - | `ApiCapture` | |
+| PATCH | `/captures/:id` | 글감·태그 수정 | `content`, `url`, `tagIds` | `ApiCapture` | `url` 변경 시에만 미리보기 재조회 |
+| DELETE | `/captures/:id` | 글감 삭제 | - | `204` | 자산·태그 연결 cascade |
+| POST | `/captures/:id/assets/upload-url` | 사진 업로드 URL 발급 | 파일명·MIME | signed URL | |
+| POST | `/captures/:id/assets/complete` | 업로드 완료 기록 | storage path | asset | |
+| GET/POST | `/tags` | 내 태그 목록·생성 | `name`, `color` | 태그 | |
+| DELETE | `/tags/:id` | 태그 삭제 | - | `204` | 연결 자동 해제 |
+| POST/DELETE | `/captures/:id/tags[...]` | 태그 개별 연결·해제 | `tagId` | `204` | 생성/수정 시 `tagIds`를 쓰면 보통 직접 호출할 필요 없음 |
+| POST | `/link-preview` | 외부 링크 정보 추출 | `url` | 제목·설명·이미지 | |
+| GET/POST | `/projects` | 목록·생성 | 프로젝트 정보 | 프로젝트 | `status` 쿼리 필터는 미구현 — 프론트가 전체를 받아 진행중/완료로 분리 표시 |
+| GET/PATCH/DELETE | `/projects/:id` | 상세·이름/설명 수정·삭제 | `title`, `description` | 프로젝트 | 상태 변경 불가 |
+| PATCH | `/projects/:id/status` | 전용 버튼으로 상태 전환 | `status`: `active`\|`done` | 프로젝트 | 일반 수정과 분리된 전용 엔드포인트 |
+| GET | `/projects/:id/captures` | 연결 글감 조회 | - | `ApiCapture[]` | `/captures`와 동일 포맷으로 통일 |
 | POST/DELETE | `/projects/:id/captures[...]` | 글감 연결·해제 | `captureId` | `204` | 복합 PK로 중복 방지 |
-| GET/POST | `/projects/:id/documents` | 원고 목록·멱등 생성 | `clientRequestId`, 제목, 본문 | 원고 | 동일 키면 기존 원고 반환 |
-| GET/PATCH/DELETE | `/projects/:id/documents/:documentId` | 원고 조회·자동 저장·삭제 | 제목·본문 | 원고 또는 `204` | 자동 저장 상시 활성화 |
-| GET | `/projects/:id/export?format=pdf\|docx\|txt` | 완료 프로젝트 내보내기 | format | 파일 stream | `done`만 허용 |
+| GET/POST | `/projects/:id/documents` | 원고 목록·생성 | 제목·본문(+`clientRequestId`, 현재 무시됨) | 원고 | 서버 측 중복 생성 방지는 TODO |
+| GET/PATCH/DELETE | `/projects/:id/documents/:documentId` | 원고 조회·자동 저장·삭제 | 제목·본문 | 원고 또는 `204` | `title`은 빈 문자열 허용(자동 저장 중 제목을 잠깐 지운 상태도 유효) |
+| GET | `/projects/:id/export?format=pdf\|docx\|txt` | 완료 프로젝트 내보내기 | format | 파일 stream | `done` 상태가 아니면 403 |
 
 #### 주요 요청 계약
-
-글감 작성 중 새 태그 생성:
-
-```text
-POST /tags
-→ 응답 tag.id를 선택 목록에 추가
-→ POST /captures의 tagIds에 포함
-```
 
 글감 생성·수정:
 
@@ -290,25 +284,16 @@ POST /tags
 }
 ```
 
-프로젝트 연결 모달과 원고 글감 검색:
-
-```http
-GET /captures?q=여행&type=text&projectId=<project-id>&limit=30&cursor=...
-```
-
-`projectId`가 있으면 각 응답의 `isLinked`를 채운다. 원고 편집기는 `projectId` 없이 호출하여 연결 여부와 무관하게 모든 글감을 검색한다.
-
-원고 멱등 생성:
-
 ```json
 {
-  "clientRequestId": "클릭 시 한 번 생성한 UUID",
-  "title": "제목 없음",
-  "content": ""
+  "type": "link",
+  "content": "사용자가 직접 작성한 메모",
+  "url": "https://example.com/article",
+  "tagIds": ["tag-uuid-1", "tag-uuid-2"]
 }
 ```
 
-동일 키에는 기존 원고를 반환하고, 클라이언트는 첫 요청이 끝날 때까지 추가 버튼을 비활성화한다.
+`tagIds`는 해당 글감의 태그 목록을 이 배열로 완전히 교체한다(생성 시 생략하거나 빈 배열이면 태그 없음).
 
 프로젝트 상태 전환:
 
@@ -316,7 +301,7 @@ GET /captures?q=여행&type=text&projectId=<project-id>&limit=30&cursor=...
 { "status": "done" }
 ```
 
-허용 전이는 `active ↔ done`뿐이다. 완료 프로젝트만 PDF·DOCX·TXT로 내보낼 수 있으며 원고를 목록 순서대로 합친다.
+허용 전이는 `active ↔ done`뿐이다. 완료 프로젝트만 PDF·DOCX·TXT로 내보낼 수 있으며, 내보내기는 프로젝트의 원고를 목록 순서대로 합친다.
 
 ---
 

@@ -6,3 +6,4 @@ export const meRouter = Router();
 
 meRouter.get("/me", requireAuth, meController.getMe);
 meRouter.patch("/me", requireAuth, meController.updateMe);
+meRouter.delete("/me", requireAuth, meController.deleteMe);

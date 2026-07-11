@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const projectStatusSchema = z.enum(["active", "done", "archived"]);
+export const projectStatusSchema = z.enum(["active", "done"]);
 
 export const createProjectSchema = z.object({
   title: z.string().min(1).max(200),
@@ -10,7 +10,14 @@ export const createProjectSchema = z.object({
 export const updateProjectSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional(),
-  status: projectStatusSchema.optional(),
+});
+
+export const updateProjectStatusSchema = z.object({
+  status: projectStatusSchema,
+});
+
+export const exportProjectQuerySchema = z.object({
+  format: z.enum(["pdf", "docx", "txt"]),
 });
 
 export const projectIdParamsSchema = z.object({
@@ -28,3 +35,5 @@ export const projectCaptureParamsSchema = z.object({
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+export type UpdateProjectStatusInput = z.infer<typeof updateProjectStatusSchema>;
+export type ExportProjectFormat = z.infer<typeof exportProjectQuerySchema>["format"];

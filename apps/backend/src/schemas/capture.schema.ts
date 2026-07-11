@@ -10,11 +10,13 @@ export const createCaptureSchema = z.object({
   type: captureTypeSchema,
   content: z.string().max(10_000).optional(), // 조각글 본문 / 링크 메모
   url: z.string().url().optional(), // type === "link"
+  tagIds: z.array(z.string().uuid()).max(20).optional(),
 });
 
 export const updateCaptureSchema = z.object({
   content: z.string().max(10_000).optional(),
   url: z.string().url().optional(),
+  tagIds: z.array(z.string().uuid()).max(20).optional(),
 });
 
 export const captureIdParamsSchema = z.object({

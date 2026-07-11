@@ -31,8 +31,23 @@ export async function createCapture(userId: string, input: CreateCaptureInput) {
   return capturesRepository.createCapture(userId, input);
 }
 
-export function updateCapture(userId: string, captureId: string, input: UpdateCaptureInput) {
-  return capturesRepository.updateCapture(userId, captureId, input);
+export async function updateCapture(userId: string, captureId: string, input: UpdateCaptureInput) {
+  if (input.url === undefined) {
+    return capturesRepository.updateCapture(userId, captureId, input);
+  }
+
+  // URL이 실제로 바뀐 경우에만 미리보기를 다시 가져온다 (안 바뀐 저장 요청마다 외부 사이트를 재크롤링하지 않도록).
+  const current = await capturesRepository.getCaptureById(userId, captureId);
+  if (current.url === input.url) {
+    return capturesRepository.updateCapture(userId, captureId, input);
+  }
+
+  const preview = await fetchLinkPreview(input.url);
+  return capturesRepository.updateCapture(userId, captureId, input, {
+    linkTitle: preview.title,
+    linkDescription: preview.description,
+    linkImageUrl: preview.imageUrl,
+  });
 }
 
 export function deleteCapture(userId: string, captureId: string) {
