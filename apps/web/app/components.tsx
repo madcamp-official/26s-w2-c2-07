@@ -40,7 +40,6 @@ export { captureTypeLabels };
 const projectStatusLabels: Record<ProjectStatus, string> = {
   active: "진행 중",
   done: "완료",
-  archived: "보관됨",
 };
 
 export function StatusBadge({ status }: { status: ProjectStatus }) {

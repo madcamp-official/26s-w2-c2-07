@@ -1,6 +1,6 @@
 "use client";
 
-import { Image, Link2, Type, Upload, Video } from "lucide-react";
+import { Image, Link2, Plus, Type, Upload, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../../api";
@@ -29,9 +29,14 @@ export default function NewCapturePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tags, setTags] = useState<ApiTag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [newTagName, setNewTagName] = useState("");
+  const [creatingTag, setCreatingTag] = useState(false);
 
   useEffect(() => {
-    api.get<ApiTag[]>("/tags").then(setTags).catch(() => setTags([]));
+    api
+      .get<ApiTag[]>("/tags")
+      .then(setTags)
+      .catch(() => setTags([]));
   }, []);
 
   const toggleTag = (tagId: string) => {
@@ -42,6 +47,22 @@ export default function NewCapturePage() {
     );
   };
 
+  const createTag = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const name = newTagName.trim();
+    if (!name) return;
+
+    setCreatingTag(true);
+    try {
+      const tag = await api.post<ApiTag>("/tags", { name, color: "#879287" });
+      setTags((current) => [...current, tag]);
+      setSelectedTagIds((current) => [...current, tag.id]);
+      setNewTagName("");
+    } finally {
+      setCreatingTag(false);
+    }
+  };
+
   const save = async () => {
     setSaving(true);
     try {
@@ -49,6 +70,7 @@ export default function NewCapturePage() {
         type,
         content: type === "text" ? text : memo || undefined,
         url: type === "link" ? url : undefined,
+        tagIds: selectedTagIds,
       });
 
       if ((type === "photo" || type === "video") && file) {
@@ -56,15 +78,20 @@ export default function NewCapturePage() {
           uploadUrl: string;
           storagePath: string;
           token: string;
-        }>(`/captures/${capture.id}/assets/upload-url`, { fileName: file.name, contentType: file.type });
+        }>(`/captures/${capture.id}/assets/upload-url`, {
+          fileName: file.name,
+          contentType: file.type,
+        });
         void uploadUrl;
-        await supabase.storage.from(STORAGE_BUCKET).uploadToSignedUrl(storagePath, token, file);
-        await api.post(`/captures/${capture.id}/assets/complete`, { storagePath });
+        if (storagePath !== "local-dummy") {
+          await supabase.storage
+            .from(STORAGE_BUCKET)
+            .uploadToSignedUrl(storagePath, token, file);
+          await api.post(`/captures/${capture.id}/assets/complete`, {
+            storagePath,
+          });
+        }
       }
-
-      await Promise.all(
-        selectedTagIds.map((tagId) => api.post(`/captures/${capture.id}/tags`, { tagId })),
-      );
 
       router.push("/captures");
     } finally {
@@ -112,7 +139,10 @@ export default function NewCapturePage() {
                 hidden
                 onChange={(event) => setFile(event.target.files?.[0] ?? null)}
               />
-              <button className="upload" onClick={() => fileInputRef.current?.click()}>
+              <button
+                className="upload"
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <Upload />
                 <b>
                   {file
@@ -122,7 +152,9 @@ export default function NewCapturePage() {
                       : "동영상을 선택하세요"}
                 </b>
                 <span>
-                  {type === "photo" ? "JPG, PNG · 최대 10MB" : "MP4, MOV · 최대 200MB"}
+                  {type === "photo"
+                    ? "JPG, PNG · 최대 10MB"
+                    : "MP4, MOV · 최대 200MB"}
                 </span>
               </button>
               <label>
@@ -172,6 +204,20 @@ export default function NewCapturePage() {
                 </button>
               ))}
             </div>
+            <form className="inline-tag-create" onSubmit={createTag}>
+              <input
+                value={newTagName}
+                onChange={(event) => setNewTagName(event.target.value)}
+                placeholder="새 태그 만들기"
+                maxLength={30}
+              />
+              <button
+                type="submit"
+                disabled={creatingTag || !newTagName.trim()}
+              >
+                <Plus /> {creatingTag ? "추가 중…" : "추가"}
+              </button>
+            </form>
           </fieldset>
           <div className="form-actions">
             <button className="button ghost" onClick={() => router.back()}>

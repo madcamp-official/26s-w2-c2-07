@@ -1,43 +1,62 @@
 "use client";
 
-import { Bell, Moon, Save, Smartphone } from "lucide-react";
-import { useState } from "react";
+import { Bell, Moon, Save } from "lucide-react";
+import { useEffect, useState } from "react";
+import { api } from "../api";
+import type { ApiSettings } from "../api-types";
 import { PageHead, Shell } from "../components";
 
-export default function SettingsPage() {
-  const [saved, setSaved] = useState(false);
-  const [settings, setSettings] = useState({
-    captureAlerts: true,
-    mobileSync: true,
-    darkMode: false,
-    autosave: "800",
-  });
+const defaultSettings: ApiSettings = {
+  captureAlertsEnabled: true,
+  darkEditorEnabled: false,
+};
 
-  const toggle = (key: "captureAlerts" | "mobileSync" | "darkMode") =>
-    setSettings((current) => ({ ...current, [key]: !current[key] }));
+export default function SettingsPage() {
+  const [settings, setSettings] = useState(defaultSettings);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    api
+      .get<ApiSettings>("/settings")
+      .then(setSettings)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const result = await api.patch<ApiSettings>("/settings", settings);
+      setSettings(result);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Shell>
       <div className="page narrow">
         <PageHead
           title="서비스 설정"
-          desc="알림, 동기화와 글쓰기 환경을 내 방식에 맞게 조정하세요."
+          desc="알림과 글쓰기 환경을 내 방식에 맞게 조정하세요."
         />
         <section className="preference-card">
-          <h2>알림 및 동기화</h2>
+          <h2>알림</h2>
           <SettingToggle
             icon={<Bell />}
             title="새 글감 알림"
             description="모바일이나 웹에서 새 글감이 추가되면 알려드려요."
-            checked={settings.captureAlerts}
-            onClick={() => toggle("captureAlerts")}
-          />
-          <SettingToggle
-            icon={<Smartphone />}
-            title="모바일 자동 동기화"
-            description="같은 계정의 모바일 글감을 웹에 바로 표시해요."
-            checked={settings.mobileSync}
-            onClick={() => toggle("mobileSync")}
+            checked={settings.captureAlertsEnabled}
+            disabled={loading}
+            onClick={() =>
+              setSettings((current) => ({
+                ...current,
+                captureAlertsEnabled: !current.captureAlertsEnabled,
+              }))
+            }
           />
         </section>
         <section className="preference-card">
@@ -46,36 +65,26 @@ export default function SettingsPage() {
             icon={<Moon />}
             title="어두운 편집 화면"
             description="원고 편집기에서 눈이 편안한 어두운 배경을 사용해요."
-            checked={settings.darkMode}
-            onClick={() => toggle("darkMode")}
+            checked={settings.darkEditorEnabled}
+            disabled={loading}
+            onClick={() =>
+              setSettings((current) => ({
+                ...current,
+                darkEditorEnabled: !current.darkEditorEnabled,
+              }))
+            }
           />
-          <label className="preference-select">
-            <div>
-              <b>자동 저장 간격</b>
-              <small>입력을 멈춘 뒤 저장할 시간을 선택하세요.</small>
-            </div>
-            <select
-              value={settings.autosave}
-              onChange={(event) =>
-                setSettings({ ...settings, autosave: event.target.value })
-              }
-            >
-              <option value="800">0.8초</option>
-              <option value="1500">1.5초</option>
-              <option value="3000">3초</option>
-            </select>
-          </label>
         </section>
+        <p className="settings-note">
+          모바일 동기화와 원고 자동 저장은 기본으로 항상 적용됩니다.
+        </p>
         <button
           className="button primary settings-save"
-          onClick={() => {
-            setSaved(true);
-            setTimeout(() => setSaved(false), 1500);
-          }}
+          onClick={save}
+          disabled={loading || saving}
         >
-          <Save /> {saved ? "저장했어요" : "설정 저장"}
+          <Save /> {saving ? "저장 중…" : saved ? "저장했어요" : "설정 저장"}
         </button>
-        {/* TODO(backend): 사용자별 서비스 설정 조회·저장 API와 연결해야 합니다. */}
       </div>
     </Shell>
   );
@@ -86,12 +95,14 @@ function SettingToggle({
   title,
   description,
   checked,
+  disabled,
   onClick,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   checked: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -104,6 +115,7 @@ function SettingToggle({
       <button
         className={`toggle ${checked ? "on" : ""}`}
         onClick={onClick}
+        disabled={disabled}
         role="switch"
         aria-checked={checked}
       >

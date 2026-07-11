@@ -16,6 +16,7 @@ export interface ApiCapture {
   created_at: string;
   updated_at: string;
   tags: ApiCaptureTag[];
+  isLinked?: boolean;
 }
 
 export interface ApiProject {
@@ -23,7 +24,7 @@ export interface ApiProject {
   user_id: string;
   title: string;
   description: string | null;
-  status: "active" | "done" | "archived";
+  status: "active" | "done";
   created_at: string;
   updated_at: string;
 }
@@ -52,7 +53,15 @@ export interface ApiTag {
 
 export interface ApiProfile {
   id: string;
+  email: string;
   display_name: string | null;
   avatar_url: string | null;
+  provider: string;
   created_at: string;
+  settings: ApiSettings;
+}
+
+export interface ApiSettings {
+  captureAlertsEnabled: boolean;
+  darkEditorEnabled: boolean;
 }

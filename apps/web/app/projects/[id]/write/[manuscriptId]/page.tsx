@@ -14,7 +14,12 @@ import {
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../../../api";
-import type { ApiDocument, ApiProject, ApiProjectCaptureLink } from "../../../../api-types";
+import type {
+  ApiCapture,
+  ApiDocument,
+  ApiProject,
+  ApiSettings,
+} from "../../../../api-types";
 import { captureExcerpt, captureTitle } from "../../../../capture-display";
 import { captureTypeLabels } from "../../../../components";
 import { type CaptureType } from "../../../../data";
@@ -29,20 +34,26 @@ const referenceIcons: Record<CaptureType, typeof Type> = {
 export default function Writer() {
   const params = useParams<{ id: string; manuscriptId: string }>();
   const [project, setProject] = useState<ApiProject | null>(null);
-  const [links, setLinks] = useState<ApiProjectCaptureLink[]>([]);
+  const [captures, setCaptures] = useState<ApiCapture[]>([]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [panel, setPanel] = useState(true);
   const [saved, setSaved] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
+  const [darkEditor, setDarkEditor] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     api.get<ApiProject>(`/projects/${params.id}`).then(setProject);
-    api.get<ApiProjectCaptureLink[]>(`/projects/${params.id}/captures`).then(setLinks);
+    api.get<ApiCapture[]>("/captures").then(setCaptures);
     api
-      .get<ApiDocument>(`/projects/${params.id}/documents/${params.manuscriptId}`)
+      .get<ApiSettings>("/settings")
+      .then((settings) => setDarkEditor(settings.darkEditorEnabled));
+    api
+      .get<ApiDocument>(
+        `/projects/${params.id}/documents/${params.manuscriptId}`,
+      )
       .then((doc) => {
         setTitle(doc.title);
         setBody(doc.content);
@@ -55,10 +66,13 @@ export default function Writer() {
     setSaved(false);
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
-      await api.patch(`/projects/${params.id}/documents/${params.manuscriptId}`, {
-        title,
-        content: body,
-      });
+      await api.patch(
+        `/projects/${params.id}/documents/${params.manuscriptId}`,
+        {
+          title,
+          content: body,
+        },
+      );
       setSaved(true);
     }, 800);
     return () => {
@@ -68,16 +82,20 @@ export default function Writer() {
   }, [title, body, loaded]);
 
   const count = useMemo(() => body.length, [body]);
-  const visibleLinks = useMemo(
+  const visibleCaptures = useMemo(
     () =>
-      links.filter(({ captures: c }) =>
-        `${captureTitle(c)} ${captureExcerpt(c)}`.includes(query),
+      captures.filter((capture) =>
+        `${captureTitle(capture)} ${captureExcerpt(capture)}`
+          .toLowerCase()
+          .includes(query.toLowerCase()),
       ),
-    [links, query],
+    [captures, query],
   );
 
   return (
-    <div className={`writer ${panel ? "panel-on" : ""}`}>
+    <div
+      className={`writer ${panel ? "panel-on" : ""} ${darkEditor ? "dark-editor" : ""}`}
+    >
       <header className="writer-header">
         <div>
           <Link href={`/projects/${params.id}`}>
@@ -116,8 +134,8 @@ export default function Writer() {
       <aside className="reference-panel">
         <div className="reference-head">
           <div>
-            <b>연결된 글감</b>
-            <small>{links.length}개의 영감</small>
+            <b>모든 글감</b>
+            <small>{captures.length}개의 영감</small>
           </div>
           <button className="icon-btn" onClick={() => setPanel(false)}>
             <PanelRightClose />
@@ -132,10 +150,10 @@ export default function Writer() {
           />
         </label>
         <div className="reference-list">
-          {visibleLinks.map(({ capture_id, captures: c }) => {
+          {visibleCaptures.map((c) => {
             const I = referenceIcons[c.type];
             return (
-              <article key={capture_id}>
+              <article key={c.id}>
                 <span>
                   <I />
                 </span>
@@ -144,7 +162,9 @@ export default function Writer() {
                   <b>{captureTitle(c)}</b>
                   <p>{captureExcerpt(c)}</p>
                   <button
-                    onClick={() => setBody((v) => `${v}\n\n${captureExcerpt(c)}`)}
+                    onClick={() =>
+                      setBody((v) => `${v}\n\n${captureExcerpt(c)}`)
+                    }
                   >
                     원고에 넣기
                   </button>

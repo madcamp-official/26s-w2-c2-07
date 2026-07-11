@@ -37,6 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<ApiProfile | null>(null);
   const [email, setEmail] = useState<string | undefined>();
   const [authChecked, setAuthChecked] = useState(false);
+  const [mockMode, setMockMode] = useState(false);
 
   useEffect(() => {
     const closeOnOutsideClick = (event: MouseEvent) => {
@@ -50,21 +51,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        router.replace("/login");
-        setProfile(null);
-        setEmail(undefined);
-      } else {
-        setEmail(session.user.email);
-        api.get<ApiProfile>("/me").then(setProfile).catch(() => setProfile(null));
-      }
-      setAuthChecked(true);
-    });
+    const showMockBanner = () => setMockMode(true);
+    window.addEventListener("nook:mock-api", showMockBanner);
+    return () => window.removeEventListener("nook:mock-api", showMockBanner);
+  }, []);
+
+  useEffect(() => {
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) {
+          router.replace("/login");
+          setProfile(null);
+          setEmail(undefined);
+        } else {
+          setEmail(session.user.email);
+          api
+            .get<ApiProfile>("/me")
+            .then(setProfile)
+            .catch(() => setProfile(null));
+        }
+        setAuthChecked(true);
+      },
+    );
     return () => subscription.subscription.unsubscribe();
   }, [router]);
 
   const signOut = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
+  const deleteAccount = async () => {
+    await api.delete("/me");
+    if (api.isUsingMockData()) {
+      alert("API 연결이 필요합니다");
+      return;
+    }
     await supabase.auth.signOut();
     router.push("/login");
   };
@@ -129,6 +151,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="main">
+        {mockMode && (
+          <div className="mock-data-banner" role="status">
+            로컬 더미 데이터로 화면을 표시하고 있습니다. 실제 저장 내용이
+            아닙니다.
+          </div>
+        )}
         <header className="topbar">
           <div />
           <div className="topbar-actions" ref={popupAreaRef}>
@@ -152,7 +180,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             {activePopup === "notifications" && <NotificationPopup />}
             {activePopup === "account" && (
-              <AccountPopup profile={profile} email={email} onSignOut={signOut} />
+              <AccountPopup
+                profile={profile}
+                email={email}
+                onSignOut={signOut}
+                onDeleteAccount={deleteAccount}
+              />
             )}
           </div>
         </header>
@@ -198,10 +231,12 @@ function AccountPopup({
   profile,
   email,
   onSignOut,
+  onDeleteAccount,
 }: {
   profile: ApiProfile | null;
   email: string | undefined;
   onSignOut: () => void;
+  onDeleteAccount: () => void;
 }) {
   return (
     <section className="top-popup account-popup" aria-label="계정 메뉴">
@@ -218,10 +253,9 @@ function AccountPopup({
       <button onClick={onSignOut}>
         <LogOut /> 로그아웃
       </button>
-      <button className="danger-menu-item">
+      <button className="danger-menu-item" onClick={onDeleteAccount}>
         <Trash2 /> 회원 탈퇴
       </button>
-      {/* TODO(backend): Supabase 로그아웃 및 계정 삭제 API와 연결해야 합니다. */}
     </section>
   );
 }

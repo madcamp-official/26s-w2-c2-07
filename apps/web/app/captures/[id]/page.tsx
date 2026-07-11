@@ -1,34 +1,84 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ExternalLink, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Pencil, Trash2, X } from "lucide-react";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "../../api";
-import type { ApiCapture } from "../../api-types";
-import { captureDate, captureExcerpt, captureTitle } from "../../capture-display";
+import type { ApiCapture, ApiTag } from "../../api-types";
+import {
+  captureDate,
+  captureExcerpt,
+  captureTitle,
+} from "../../capture-display";
 import { Shell, TypeBadge } from "../../components";
 
-export default function CaptureDetail() {
+export default function CaptureDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [capture, setCapture] = useState<ApiCapture | null>(null);
+  const [tags, setTags] = useState<ApiTag[]>([]);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [draft, setDraft] = useState({
+    content: "",
+    url: "",
+    tagIds: [] as string[],
+  });
 
-  useEffect(() => {
+  const loadCapture = () => {
     api
       .get<ApiCapture>(`/captures/${id}`)
-      .then(setCapture)
+      .then((result) => {
+        setCapture(result);
+        setDraft({
+          content: result.content ?? "",
+          url: result.url ?? "",
+          tagIds: result.tags.map((tag) => tag.id),
+        });
+      })
       .catch(() => setNotFound(true));
+  };
+
+  useEffect(() => {
+    loadCapture();
+    api
+      .get<ApiTag[]>("/tags")
+      .then(setTags)
+      .catch(() => setTags([]));
   }, [id]);
 
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      await api.patch(`/captures/${id}`, {
+        content: draft.content,
+        url: capture?.type === "link" ? draft.url : undefined,
+        tagIds: draft.tagIds,
+      });
+      setEditing(false);
+      loadCapture();
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const remove = async () => {
-    if (!capture) return;
-    await api.delete(`/captures/${capture.id}`);
+    await api.delete(`/captures/${id}`);
     router.push("/captures");
   };
 
-  if (notFound) {
+  const toggleTag = (tagId: string) =>
+    setDraft((current) => ({
+      ...current,
+      tagIds: current.tagIds.includes(tagId)
+        ? current.tagIds.filter((id) => id !== tagId)
+        : [...current.tagIds, tagId],
+    }));
+
+  if (notFound)
     return (
       <Shell>
         <div className="page narrow">
@@ -36,8 +86,6 @@ export default function CaptureDetail() {
         </div>
       </Shell>
     );
-  }
-
   if (!capture) return null;
 
   return (
@@ -52,9 +100,19 @@ export default function CaptureDetail() {
             <time>{captureDate(capture)}</time>
           </div>
           <h1>{captureTitle(capture)}</h1>
+          <div className="detail-tags">
+            {capture.tags.map((tag) => (
+              <span key={tag.id}>#{tag.name}</span>
+            ))}
+          </div>
           <p className="detail-body">{captureExcerpt(capture)}</p>
           {capture.type === "link" && capture.url && (
-            <a className="link-preview" href={capture.url} target="_blank" rel="noreferrer">
+            <a
+              className="link-preview"
+              href={capture.url}
+              target="_blank"
+              rel="noreferrer"
+            >
               <div>
                 <small>{capture.url}</small>
                 <b>{capture.link_title ?? capture.url}</b>
@@ -64,11 +122,82 @@ export default function CaptureDetail() {
             </a>
           )}
           <div className="detail-actions">
+            <button onClick={() => setEditing(true)}>
+              <Pencil /> 수정
+            </button>
             <button className="danger" onClick={remove}>
               <Trash2 /> 삭제
             </button>
           </div>
         </article>
+
+        {editing && (
+          <div className="modal-backdrop">
+            <form className="dialog" onSubmit={save}>
+              <div className="dialog-heading">
+                <div>
+                  <h2>글감 수정</h2>
+                  <p>메모와 태그를 다시 정리할 수 있어요.</p>
+                </div>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => setEditing(false)}
+                >
+                  <X />
+                </button>
+              </div>
+              {capture.type === "link" && (
+                <label>
+                  URL
+                  <input
+                    type="url"
+                    value={draft.url}
+                    onChange={(event) =>
+                      setDraft({ ...draft, url: event.target.value })
+                    }
+                  />
+                </label>
+              )}
+              <label>
+                {capture.type === "text" ? "내용" : "메모"}
+                <textarea
+                  value={draft.content}
+                  onChange={(event) =>
+                    setDraft({ ...draft, content: event.target.value })
+                  }
+                />
+              </label>
+              <fieldset className="tag-selector">
+                <legend>태그</legend>
+                <div>
+                  {tags.map((tag) => (
+                    <button
+                      type="button"
+                      key={tag.id}
+                      className={draft.tagIds.includes(tag.id) ? "active" : ""}
+                      onClick={() => toggleTag(tag.id)}
+                    >
+                      #{tag.name}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="button ghost"
+                  onClick={() => setEditing(false)}
+                >
+                  취소
+                </button>
+                <button className="button primary" disabled={saving}>
+                  {saving ? "저장 중…" : "수정 저장"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </Shell>
   );
