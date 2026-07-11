@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/noto-sans-kr": "^5.2.9",
     "@supabase/supabase-js": "^2.45.0",
     "cors": "^2.8.5",
     "docx": "^9.7.1",

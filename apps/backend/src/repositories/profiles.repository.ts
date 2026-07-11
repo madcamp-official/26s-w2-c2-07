@@ -1,7 +1,11 @@
 import { supabaseAdmin } from "../lib/supabase.js";
 import type { UpdateProfileInput } from "../schemas/profile.schema.js";
-import type { UpdateSettingsInput } from "../schemas/settings.schema.js";
 import { HttpError } from "../utils/http-error.js";
+
+export interface UpdateSettingsRow {
+  notifyEnabled?: boolean;
+  darkEditor?: boolean;
+}
 
 export async function getProfile(userId: string) {
   const { data, error } = await supabaseAdmin.from("profiles").select("*").eq("id", userId).single();
@@ -33,7 +37,7 @@ export async function getSettings(userId: string) {
   return data;
 }
 
-export async function updateSettings(userId: string, input: UpdateSettingsInput) {
+export async function updateSettings(userId: string, input: UpdateSettingsRow) {
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .update({ notify_enabled: input.notifyEnabled, dark_editor: input.darkEditor })

@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../lib/supabase.js";
+import * as capturesRepository from "./captures.repository.js";
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -81,11 +82,17 @@ export async function listProjectCaptures(userId: string, projectId: string) {
 
   const { data, error } = await supabaseAdmin
     .from("project_captures")
-    .select("capture_id, captures(*)")
-    .eq("project_id", projectId);
+    .select("capture_id")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
 
   if (error) throw HttpError.badRequest(error.message);
-  return data;
+
+  // /captures, /captures/:id와 동일한 포맷(tags, image_url 포함)으로 통일해서 내려준다.
+  return capturesRepository.getCapturesByIds(
+    userId,
+    data.map((row) => row.capture_id),
+  );
 }
 
 export async function linkCapture(userId: string, projectId: string, captureId: string) {

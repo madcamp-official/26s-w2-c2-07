@@ -1,9 +1,17 @@
+import { createRequire } from "node:module";
 import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
 import PDFDocument from "pdfkit";
 import type { ExportProjectFormat } from "../schemas/project.schema.js";
 import * as documentsRepository from "../repositories/documents.repository.js";
 import * as projectsRepository from "../repositories/projects.repository.js";
 import { HttpError } from "../utils/http-error.js";
+
+// PDFKit 기본(Helvetica 등 PDF 표준 14폰트)은 한글 글리프가 없어 그대로 쓰면 글자가 깨진다.
+// 한글을 지원하는 폰트를 임베드해서 써야 한다. npm 패키지로 받아두면 OS에 상관없이 항상 같은 경로에서 찾을 수 있다.
+const require = createRequire(import.meta.url);
+const KOREAN_FONT_PATH = require.resolve(
+  "@fontsource/noto-sans-kr/files/noto-sans-kr-korean-400-normal.woff",
+);
 
 export interface ExportedFile {
   buffer: Buffer;
@@ -51,6 +59,9 @@ function buildPdf(title: string, documents: { title: string; content: string }[]
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
+
+    doc.registerFont("NotoSansKR", KOREAN_FONT_PATH);
+    doc.font("NotoSansKR");
 
     doc.fontSize(20).text(title, { align: "left" });
     doc.moveDown(2);

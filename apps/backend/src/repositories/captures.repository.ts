@@ -73,6 +73,22 @@ export async function getCaptureById(userId: string, captureId: string) {
   return capture;
 }
 
+// capture_tags를 tagIds 목록으로 완전히 교체한다 (프론트가 항상 "지금 선택된 전체 태그 목록"을 보내는 방식이라 diff 계산 불필요).
+async function replaceCaptureTags(captureId: string, tagIds: string[]) {
+  const { error: deleteError } = await supabaseAdmin
+    .from("capture_tags")
+    .delete()
+    .eq("capture_id", captureId);
+  if (deleteError) throw HttpError.badRequest(deleteError.message);
+
+  if (tagIds.length) {
+    const { error: insertError } = await supabaseAdmin
+      .from("capture_tags")
+      .insert(tagIds.map((tagId) => ({ capture_id: captureId, tag_id: tagId })));
+    if (insertError) throw HttpError.badRequest(insertError.message);
+  }
+}
+
 export async function createCapture(userId: string, input: CreateCaptureInput, preview?: LinkPreviewFields) {
   const { data, error } = await supabaseAdmin
     .from("captures")
@@ -85,30 +101,78 @@ export async function createCapture(userId: string, input: CreateCaptureInput, p
       link_description: preview?.linkDescription,
       link_image_url: preview?.linkImageUrl,
     })
-    .select("*")
+    .select("id")
     .single();
 
   if (error) throw HttpError.badRequest(error.message);
-  return data;
+
+  if (input.tagIds?.length) await replaceCaptureTags(data.id, input.tagIds);
+
+  return getCaptureById(userId, data.id);
 }
 
-export async function updateCapture(userId: string, captureId: string, input: UpdateCaptureInput) {
+export async function updateCapture(
+  userId: string,
+  captureId: string,
+  input: UpdateCaptureInput,
+  preview?: LinkPreviewFields,
+) {
   const { data, error } = await supabaseAdmin
     .from("captures")
-    .update({ content: input.content, url: input.url, updated_at: new Date().toISOString() })
+    .update({
+      content: input.content,
+      url: input.url,
+      link_title: preview?.linkTitle,
+      link_description: preview?.linkDescription,
+      link_image_url: preview?.linkImageUrl,
+      updated_at: new Date().toISOString(),
+    })
     .eq("user_id", userId)
     .eq("id", captureId)
-    .select("*")
+    .select("id")
     .single();
 
+  // 소유권 확인(위 update가 실제로 이 유저의 row를 건드렸는지)이 끝난 뒤에만 태그를 동기화한다.
   if (error) throw HttpError.notFound("Capture not found");
-  return data;
+
+  if (input.tagIds !== undefined) await replaceCaptureTags(data.id, input.tagIds);
+
+  return getCaptureById(userId, data.id);
 }
 
 export async function deleteCapture(userId: string, captureId: string) {
   const { error } = await supabaseAdmin.from("captures").delete().eq("user_id", userId).eq("id", captureId);
 
   if (error) throw HttpError.badRequest(error.message);
+}
+
+// 프로젝트에 연결된 글감처럼, 다른 리소스가 캡처를 참조할 때도
+// /captures, /captures/:id와 같은 포맷(tags, image_url 포함)으로 내려주기 위한 공용 조회.
+export async function getCapturesByIds(userId: string, captureIds: string[]) {
+  if (!captureIds.length) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from("captures")
+    .select(CAPTURE_SELECT_WITH_TAGS)
+    .eq("user_id", userId)
+    .in("id", captureIds);
+
+  if (error) throw HttpError.badRequest(error.message);
+
+  const captures = await attachImageUrls(data.map(flattenTags));
+  const byId = new Map(captures.map((capture: any) => [capture.id, capture]));
+  return captureIds.map((id) => byId.get(id)).filter((capture): capture is any => Boolean(capture));
+}
+
+// 계정 삭제 시 Storage에서 함께 지워야 할 파일 경로를 한 번의 쿼리로 모은다.
+export async function listAssetStoragePaths(userId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("capture_assets")
+    .select("storage_path, captures!inner(user_id)")
+    .eq("captures.user_id", userId);
+
+  if (error) throw HttpError.badRequest(error.message);
+  return (data ?? []).map((row: any) => row.storage_path as string);
 }
 
 export async function createCaptureAsset(userId: string, captureId: string, storagePath: string) {
