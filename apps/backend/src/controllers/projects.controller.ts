@@ -1,11 +1,14 @@
 import type { Request, Response } from "express";
 import {
   createProjectSchema,
+  exportProjectQuerySchema,
   linkCaptureSchema,
   projectCaptureParamsSchema,
   projectIdParamsSchema,
   updateProjectSchema,
+  updateProjectStatusSchema,
 } from "../schemas/project.schema.js";
+import * as projectExportService from "../services/project-export.service.js";
 import * as projectsService from "../services/projects.service.js";
 
 export async function listProjects(req: Request, res: Response) {
@@ -30,6 +33,26 @@ export async function updateProject(req: Request, res: Response) {
   const input = updateProjectSchema.parse(req.body);
   const project = await projectsService.updateProject(req.user!.id, id, input);
   res.json(project);
+}
+
+export async function updateProjectStatus(req: Request, res: Response) {
+  const { id } = projectIdParamsSchema.parse(req.params);
+  const input = updateProjectStatusSchema.parse(req.body);
+  const project = await projectsService.updateProjectStatus(req.user!.id, id, input);
+  res.json(project);
+}
+
+export async function exportProject(req: Request, res: Response) {
+  const { id } = projectIdParamsSchema.parse(req.params);
+  const { format } = exportProjectQuerySchema.parse(req.query);
+  const file = await projectExportService.exportProject(req.user!.id, id, format);
+
+  res.setHeader("Content-Type", file.contentType);
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
+  );
+  res.send(file.buffer);
 }
 
 export async function deleteProject(req: Request, res: Response) {

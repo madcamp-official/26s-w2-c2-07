@@ -1,5 +1,9 @@
 import { supabaseAdmin } from "../lib/supabase.js";
-import type { CreateProjectInput, UpdateProjectInput } from "../schemas/project.schema.js";
+import type {
+  CreateProjectInput,
+  UpdateProjectInput,
+  UpdateProjectStatusInput,
+} from "../schemas/project.schema.js";
 import { HttpError } from "../utils/http-error.js";
 
 export async function listProjects(userId: string) {
@@ -40,6 +44,23 @@ export async function updateProject(userId: string, projectId: string, input: Up
   const { data, error } = await supabaseAdmin
     .from("projects")
     .update({ ...input, updated_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .eq("id", projectId)
+    .select("*")
+    .single();
+
+  if (error) throw HttpError.notFound("Project not found");
+  return data;
+}
+
+export async function updateProjectStatus(
+  userId: string,
+  projectId: string,
+  input: UpdateProjectStatusInput,
+) {
+  const { data, error } = await supabaseAdmin
+    .from("projects")
+    .update({ status: input.status, updated_at: new Date().toISOString() })
     .eq("user_id", userId)
     .eq("id", projectId)
     .select("*")

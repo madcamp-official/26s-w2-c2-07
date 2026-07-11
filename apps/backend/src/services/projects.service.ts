@@ -1,5 +1,9 @@
 import * as projectsRepository from "../repositories/projects.repository.js";
-import type { CreateProjectInput, UpdateProjectInput } from "../schemas/project.schema.js";
+import type {
+  CreateProjectInput,
+  UpdateProjectInput,
+  UpdateProjectStatusInput,
+} from "../schemas/project.schema.js";
 
 export function listProjects(userId: string) {
   return projectsRepository.listProjects(userId);
@@ -15,6 +19,10 @@ export function createProject(userId: string, input: CreateProjectInput) {
 
 export function updateProject(userId: string, projectId: string, input: UpdateProjectInput) {
   return projectsRepository.updateProject(userId, projectId, input);
+}
+
+export function updateProjectStatus(userId: string, projectId: string, input: UpdateProjectStatusInput) {
+  return projectsRepository.updateProjectStatus(userId, projectId, input);
 }
 
 export function deleteProject(userId: string, projectId: string) {

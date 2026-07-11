@@ -4,11 +4,10 @@ import { HttpError } from "../utils/http-error.js";
 import { getProjectById } from "./projects.repository.js";
 
 export async function listDocuments(userId: string, projectId: string) {
-  await getProjectById(userId, projectId); // ownership check
-
   const { data, error } = await supabaseAdmin
     .from("documents")
     .select("*")
+    .eq("user_id", userId)
     .eq("project_id", projectId)
     .order("updated_at", { ascending: false });
 
@@ -17,11 +16,10 @@ export async function listDocuments(userId: string, projectId: string) {
 }
 
 export async function getDocumentById(userId: string, projectId: string, documentId: string) {
-  await getProjectById(userId, projectId); // ownership check
-
   const { data, error } = await supabaseAdmin
     .from("documents")
     .select("*")
+    .eq("user_id", userId)
     .eq("project_id", projectId)
     .eq("id", documentId)
     .single();
@@ -31,11 +29,11 @@ export async function getDocumentById(userId: string, projectId: string, documen
 }
 
 export async function createDocument(userId: string, projectId: string, input: CreateDocumentInput) {
-  await getProjectById(userId, projectId); // ownership check
+  await getProjectById(userId, projectId); // ownership check (insert has no row yet to filter by)
 
   const { data, error } = await supabaseAdmin
     .from("documents")
-    .insert({ project_id: projectId, title: input.title, content: input.content })
+    .insert({ project_id: projectId, user_id: userId, title: input.title, content: input.content })
     .select("*")
     .single();
 
@@ -49,11 +47,10 @@ export async function updateDocument(
   documentId: string,
   input: UpdateDocumentInput,
 ) {
-  await getProjectById(userId, projectId); // ownership check
-
   const { data, error } = await supabaseAdmin
     .from("documents")
     .update({ ...input, updated_at: new Date().toISOString() })
+    .eq("user_id", userId)
     .eq("project_id", projectId)
     .eq("id", documentId)
     .select("*")
@@ -64,11 +61,10 @@ export async function updateDocument(
 }
 
 export async function deleteDocument(userId: string, projectId: string, documentId: string) {
-  await getProjectById(userId, projectId); // ownership check
-
   const { error } = await supabaseAdmin
     .from("documents")
     .delete()
+    .eq("user_id", userId)
     .eq("project_id", projectId)
     .eq("id", documentId);
 
