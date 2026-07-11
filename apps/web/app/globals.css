@@ -683,7 +683,7 @@ button {
   border-radius: 11px;
   padding: 17px;
   display: grid;
-  grid-template-columns: 145px 1fr 30px;
+  grid-template-columns: 1fr 30px;
   gap: 25px;
   align-items: center;
 }
