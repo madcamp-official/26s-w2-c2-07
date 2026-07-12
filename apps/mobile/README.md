@@ -9,16 +9,21 @@ Flutter 기반의 모바일 글감 수집 앱입니다.
 ```bash
 cd apps/mobile
 flutter create --platforms=android,ios --project-name nook_mobile .
-cp .env.example .env
 flutter pub get
 flutter run
+```
+
+Windows PowerShell에서는 환경 파일을 다음과 같이 복사합니다.
+
+```powershell
+Copy-Item .env.example .env
 ```
 
 `flutter create`가 기존 `lib/main.dart` 교체 여부를 묻는다면 현재 파일을 유지합니다.
 
 ## Android 로컬 API
 
-Android 에뮬레이터에서 호스트의 백엔드에 접근할 때 `.env`의 `API_URL`은 `http://10.0.2.2:<port>/api`를 사용합니다. 실제 기기에서는 개발 PC의 같은 네트워크 IP를 사용해야 합니다.
+Android 에뮬레이터에서 호스트의 백엔드에 접근할 때 `.env`의 `API_URL`은 `http://10.0.2.2:4000/api/v1`을 사용합니다. 실제 기기에서는 개발 PC의 같은 네트워크 IP와 `/api/v1` 경로를 사용해야 합니다.
 
 ## 남은 네이티브 설정
 
