@@ -193,7 +193,7 @@ class _CaptureCardGrid extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
-        childAspectRatio: 0.72,
+        childAspectRatio: 0.62,
       ),
       itemBuilder: (context, index) {
         final item = items[index];
@@ -202,7 +202,7 @@ class _CaptureCardGrid extends StatelessWidget {
           onTap: () => context.push('/captures/${item.id}'),
           child: Card(
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -220,20 +220,20 @@ class _CaptureCardGrid extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _CaptureThumbnail(type: item.type),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Text(
                     item.title,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     item.description,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 8),
                   Text(
                     '#${item.tag} · ${item.date}',
                     maxLines: 1,
@@ -316,7 +316,7 @@ class _CaptureThumbnail extends StatelessWidget {
 
     final icon = type == '사진' ? Icons.image_outlined : Icons.link;
     return Container(
-      height: 70,
+      height: 52,
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppTheme.mist,
