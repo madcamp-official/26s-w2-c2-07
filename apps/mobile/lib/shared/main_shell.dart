@@ -21,6 +21,14 @@ class MainShell extends StatelessWidget {
         onDestinationSelected: navigationShell.goBranch,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), label: '수집'),
+          NavigationDestination(
+            icon: Icon(Icons.collections_bookmark_outlined),
+            label: '글감함',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.folder_copy_outlined),
+            label: '프로젝트',
+          ),
           NavigationDestination(icon: Icon(Icons.person_outline), label: '프로필'),
         ],
       ),
