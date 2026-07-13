@@ -23,7 +23,7 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            '모바일 Nook의 첫 화면은 글감 수집에 집중합니다.',
+            '당신의 글감을 모아보세요.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),
@@ -142,7 +142,7 @@ class _RecentCaptures extends StatelessWidget {
                 leading: CircleAvatar(
                   backgroundColor: AppTheme.mist,
                   foregroundColor: AppTheme.moss,
-                  child: Text(capture.$2.characters.first),
+                  child: Icon(_captureIcon(capture.$2)),
                 ),
                 title: Text(capture.$3),
                 subtitle: Text(capture.$4),
@@ -153,4 +153,12 @@ class _RecentCaptures extends StatelessWidget {
       ],
     );
   }
+}
+
+IconData _captureIcon(String type) {
+  return switch (type) {
+    '사진' => Icons.photo_camera_outlined,
+    '링크' => Icons.link,
+    _ => Icons.short_text,
+  };
 }
