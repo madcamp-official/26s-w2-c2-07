@@ -69,6 +69,10 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
                   icon: Icon(Icons.photo_camera_outlined),
                   label: Text('사진')),
               ButtonSegment(
+                  value: 'video',
+                  icon: Icon(Icons.videocam_outlined),
+                  label: Text('동영상')),
+              ButtonSegment(
                   value: 'link', icon: Icon(Icons.link), label: Text('링크')),
             ],
             selected: {type},
@@ -107,6 +111,19 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
                 },
                 icon: const Icon(Icons.photo_library_outlined),
                 label: const Text('사진 선택'),
+              ),
+            ),
+          if (type == 'video')
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('동영상 선택은 권한 연결 후 활성화됩니다.')),
+                  );
+                },
+                icon: const Icon(Icons.video_library_outlined),
+                label: const Text('동영상 선택'),
               ),
             ),
           TextField(

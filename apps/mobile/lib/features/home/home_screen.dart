@@ -55,7 +55,7 @@ class _QuickCapturePanel extends StatelessWidget {
             const SizedBox(height: 14),
             Text('바로 남기기', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            const Text('문장, 사진, 링크를 열어둔 채로 잊기 전에 기록하세요.'),
+            const Text('문장, 사진, 영상, 링크를 열어둔 채로 잊기 전에 기록하세요.'),
             const SizedBox(height: 18),
             FilledButton.icon(
               onPressed: onStart,
@@ -77,6 +77,7 @@ class _CaptureShortcuts extends StatelessWidget {
     final items = [
       (Icons.short_text, '조각글', '떠오른 문장부터'),
       (Icons.photo_camera_outlined, '사진', '장면을 함께'),
+      (Icons.videocam_outlined, '동영상', '순간을 생생히'),
       (Icons.link, '링크', '읽을 거리 저장'),
     ];
 
