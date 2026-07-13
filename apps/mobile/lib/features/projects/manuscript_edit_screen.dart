@@ -69,6 +69,10 @@ class _ManuscriptEditScreenState extends State<ManuscriptEditScreen> {
           if (linkedCaptures.any((item) => item.id == capture.id)) return;
           setState(() => linkedCaptures.add(capture));
         },
+        onRemove: (capture) {
+          setState(() =>
+              linkedCaptures.removeWhere((item) => item.id == capture.id));
+        },
       ),
     );
   }
@@ -124,10 +128,12 @@ class _CaptureConnectorSheet extends StatefulWidget {
   const _CaptureConnectorSheet({
     required this.linkedCaptures,
     required this.onAdd,
+    required this.onRemove,
   });
 
   final List<_ManuscriptCapture> linkedCaptures;
   final ValueChanged<_ManuscriptCapture> onAdd;
+  final ValueChanged<_ManuscriptCapture> onRemove;
 
   @override
   State<_CaptureConnectorSheet> createState() => _CaptureConnectorSheetState();
@@ -207,7 +213,14 @@ class _CaptureConnectorSheetState extends State<_CaptureConnectorSheet> {
                     _ConnectorCaptureTile(
                       capture: capture,
                       isLinked: true,
-                      onAdd: null,
+                      onToggle: () {
+                        widget.onRemove(capture);
+                        setState(() {});
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text('${capture.title} 글감 연결을 해제했습니다.')),
+                        );
+                      },
                     ),
                 ],
               ),
@@ -227,12 +240,23 @@ class _CaptureConnectorSheetState extends State<_CaptureConnectorSheet> {
                       capture: capture,
                       isLinked: widget.linkedCaptures
                           .any((item) => item.id == capture.id),
-                      onAdd: () {
-                        widget.onAdd(capture);
+                      onToggle: () {
+                        final isLinked = widget.linkedCaptures
+                            .any((item) => item.id == capture.id);
+                        if (isLinked) {
+                          widget.onRemove(capture);
+                        } else {
+                          widget.onAdd(capture);
+                        }
                         setState(() {});
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                              content: Text('${capture.title} 글감을 연결했습니다.')),
+                            content: Text(
+                              isLinked
+                                  ? '${capture.title} 글감 연결을 해제했습니다.'
+                                  : '${capture.title} 글감을 연결했습니다.',
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -250,12 +274,12 @@ class _ConnectorCaptureTile extends StatelessWidget {
   const _ConnectorCaptureTile({
     required this.capture,
     required this.isLinked,
-    required this.onAdd,
+    required this.onToggle,
   });
 
   final _ManuscriptCapture capture;
   final bool isLinked;
-  final VoidCallback? onAdd;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -268,13 +292,14 @@ class _ConnectorCaptureTile extends StatelessWidget {
         ),
         title: Text(capture.title),
         subtitle: Text('#${capture.tag} · ${capture.type}'),
-        trailing: isLinked
-            ? const Icon(Icons.check_circle, color: AppTheme.moss)
-            : IconButton(
-                tooltip: '원고에 연결',
-                onPressed: onAdd,
-                icon: const Icon(Icons.add_circle_outline),
-              ),
+        trailing: IconButton(
+          tooltip: isLinked ? '연결 해제' : '원고에 연결',
+          onPressed: onToggle,
+          icon: Icon(
+            isLinked ? Icons.remove_circle_outline : Icons.add_circle_outline,
+            color: isLinked ? AppTheme.moss : null,
+          ),
+        ),
       ),
     );
   }
