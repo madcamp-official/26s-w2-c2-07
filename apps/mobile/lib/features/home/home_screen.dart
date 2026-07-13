@@ -81,34 +81,33 @@ class _CaptureShortcuts extends StatelessWidget {
       (Icons.link, '링크', '읽을 거리 저장', 'link'),
     ];
 
-    return Row(
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      childAspectRatio: 1.7,
       children: [
         for (final item in items)
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(right: item == items.last ? 0 : 10),
-              child: InkWell(
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => context.push('/capture?type=${item.$4}'),
+            child: Ink(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppTheme.paper,
                 borderRadius: BorderRadius.circular(8),
-                onTap: () => context.push('/capture?type=${item.$4}'),
-                child: Ink(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppTheme.paper,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(item.$1, color: AppTheme.clay),
-                      const SizedBox(height: 12),
-                      Text(item.$2,
-                          style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 4),
-                      Text(item.$3,
-                          style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(item.$1, color: AppTheme.clay),
+                  const Spacer(),
+                  Text(item.$2, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 4),
+                  Text(item.$3, style: Theme.of(context).textTheme.bodySmall),
+                ],
               ),
             ),
           ),
@@ -158,6 +157,7 @@ class _RecentCaptures extends StatelessWidget {
 IconData _captureIcon(String type) {
   return switch (type) {
     '사진' => Icons.photo_camera_outlined,
+    '동영상' => Icons.videocam_outlined,
     '링크' => Icons.link,
     _ => Icons.short_text,
   };

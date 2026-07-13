@@ -25,6 +25,7 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
     super.initState();
     type = switch (widget.initialType) {
       'photo' => 'photo',
+      'video' => 'video',
       'link' => 'link',
       _ => 'text',
     };

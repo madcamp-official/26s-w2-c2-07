@@ -64,6 +64,7 @@ class _CaptureDetailScreenState extends State<CaptureDetailScreen> {
             segments: const [
               ButtonSegment(value: '조각글', label: Text('글')),
               ButtonSegment(value: '사진', label: Text('사진')),
+              ButtonSegment(value: '동영상', label: Text('동영상')),
               ButtonSegment(value: '링크', label: Text('링크')),
             ],
             selected: {type},
@@ -114,7 +115,11 @@ class _MediaPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = type == '사진' ? Icons.image_outlined : Icons.link;
+    final icon = switch (type) {
+      '사진' => Icons.image_outlined,
+      '동영상' => Icons.play_circle_outline,
+      _ => Icons.link,
+    };
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
@@ -132,6 +137,8 @@ class _MediaPreview extends StatelessWidget {
 _CaptureDetailData _captureById(String id) {
   return switch (id) {
     'c2' => _CaptureDetailData('사진', '창가에 놓인 노트와 커피', '차분한 분위기의 사진 글감입니다.'),
+    'c4' =>
+      _CaptureDetailData('동영상', '짧게 기록한 거리의 소리', '움직임과 소리가 함께 남은 동영상 글감입니다.'),
     'c3' => _CaptureDetailData('링크', '퇴근길에 읽은 에세이', '나중에 프로젝트에 연결할 링크 글감입니다.'),
     _ => _CaptureDetailData('조각글', '따뜻한 문장은 오래 머문다.', '문장으로 시작된 글감입니다.'),
   };

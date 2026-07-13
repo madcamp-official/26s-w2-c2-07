@@ -390,6 +390,7 @@ Future<bool> showConfirmDialog(
           content: Text(message),
           actions: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
@@ -397,9 +398,16 @@ Future<bool> showConfirmDialog(
                   child: const Text('취소'),
                 ),
                 const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('확인'),
+                SizedBox(
+                  height: 40,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      minimumSize: Size.zero,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('확인'),
+                  ),
                 ),
               ],
             ),
