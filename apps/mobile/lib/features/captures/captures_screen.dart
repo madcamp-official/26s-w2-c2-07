@@ -193,7 +193,7 @@ class _CaptureCardGrid extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
-        childAspectRatio: 0.9,
+        childAspectRatio: 0.72,
       ),
       itemBuilder: (context, index) {
         final item = items[index];
@@ -206,27 +206,38 @@ class _CaptureCardGrid extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _CaptureBadge(type: item.type),
-                  const SizedBox(height: 12),
-                  _CaptureThumbnail(type: item.type),
-                  const SizedBox(height: 12),
-                  Text(item.title,
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Row(
+                    children: [
+                      _CaptureBadge(type: item.type),
+                      const Spacer(),
+                      IconButton(
+                        tooltip: '삭제',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => onDelete(item),
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
+                  _CaptureThumbnail(type: item.type),
+                  const SizedBox(height: 10),
+                  Text(
+                    item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 6),
                   Text(
                     item.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const Spacer(),
-                  Text('#${item.tag} · ${item.date}'),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton(
-                      tooltip: '삭제',
-                      onPressed: () => onDelete(item),
-                      icon: const Icon(Icons.delete_outline),
-                    ),
+                  Text(
+                    '#${item.tag} · ${item.date}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
