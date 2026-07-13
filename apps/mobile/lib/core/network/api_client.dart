@@ -30,7 +30,8 @@ class ApiClient {
       });
     if (body != null) request.body = jsonEncode(body);
 
-    final response = await http.Response.fromStream(await _client.send(request));
+    final response =
+        await http.Response.fromStream(await _client.send(request));
     final payload = response.body.isEmpty ? null : jsonDecode(response.body);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(response.statusCode, payload?['error']?['message']);
