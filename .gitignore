@@ -1,0 +1,28 @@
+.idea/
+*.iml
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+android/local.properties
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+
+# Web
+node_modules/
+.next/
+out/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
