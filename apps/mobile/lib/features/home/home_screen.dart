@@ -75,9 +75,9 @@ class _CaptureShortcuts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      (Icons.short_text, '조각글', '떠오른 문장부터'),
-      (Icons.photo_camera_outlined, '사진', '장면을 함께'),
-      (Icons.link, '링크', '읽을 거리 저장'),
+      (Icons.short_text, '조각글', '떠오른 문장부터', 'text'),
+      (Icons.photo_camera_outlined, '사진', '장면을 함께', 'photo'),
+      (Icons.link, '링크', '읽을 거리 저장', 'link'),
     ];
 
     return Row(
@@ -88,7 +88,7 @@ class _CaptureShortcuts extends StatelessWidget {
               padding: EdgeInsets.only(right: item == items.last ? 0 : 10),
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
-                onTap: () => context.push('/capture'),
+                onTap: () => context.push('/capture?type=${item.$4}'),
                 child: Ink(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -122,9 +122,9 @@ class _RecentCaptures extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final captures = [
-      ('링크', '퇴근길에 읽은 에세이', '오늘 18:20'),
-      ('조각글', '따뜻한 문장은 오래 머문다.', '오늘 13:04'),
-      ('사진', '창가에 놓인 노트와 커피', '어제'),
+      ('c3', '링크', '퇴근길에 읽은 에세이', '오늘 18:20'),
+      ('c1', '조각글', '따뜻한 문장은 오래 머문다.', '오늘 13:04'),
+      ('c2', '사진', '창가에 놓인 노트와 커피', '어제'),
     ];
 
     return Column(
@@ -137,13 +137,14 @@ class _RecentCaptures extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 10),
             child: Card(
               child: ListTile(
+                onTap: () => context.push('/captures/${capture.$1}'),
                 leading: CircleAvatar(
                   backgroundColor: AppTheme.mist,
                   foregroundColor: AppTheme.moss,
-                  child: Text(capture.$1.characters.first),
+                  child: Text(capture.$2.characters.first),
                 ),
-                title: Text(capture.$2),
-                subtitle: Text(capture.$3),
+                title: Text(capture.$3),
+                subtitle: Text(capture.$4),
                 trailing: const Icon(Icons.chevron_right),
               ),
             ),

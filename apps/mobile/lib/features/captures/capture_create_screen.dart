@@ -4,19 +4,31 @@ import '../../core/theme/app_theme.dart';
 import '../../shared/main_shell.dart';
 
 class CaptureCreateScreen extends StatefulWidget {
-  const CaptureCreateScreen({super.key});
+  const CaptureCreateScreen({this.initialType = 'text', super.key});
+
+  final String initialType;
 
   @override
   State<CaptureCreateScreen> createState() => _CaptureCreateScreenState();
 }
 
 class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
-  String type = 'text';
+  late String type;
   final titleController = TextEditingController();
   final memoController = TextEditingController();
   final linkController = TextEditingController();
   final tagController = TextEditingController();
   final tags = <String>['초안', '읽을거리'];
+
+  @override
+  void initState() {
+    super.initState();
+    type = switch (widget.initialType) {
+      'photo' => 'photo',
+      'link' => 'link',
+      _ => 'text',
+    };
+  }
 
   @override
   void dispose() {
