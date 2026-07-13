@@ -75,10 +75,10 @@ class _CaptureShortcuts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      (Icons.short_text, '조각글', '떠오른 문장부터'),
-      (Icons.photo_camera_outlined, '사진', '장면을 함께'),
-      (Icons.videocam_outlined, '동영상', '순간을 생생히'),
-      (Icons.link, '링크', '읽을 거리 저장'),
+      (Icons.short_text, '조각글', '떠오른 문장부터', 'text'),
+      (Icons.photo_camera_outlined, '사진', '장면을 함께', 'photo'),
+      (Icons.videocam_outlined, '동영상', '순간을 생생히', 'video'),
+      (Icons.link, '링크', '읽을 거리 저장', 'link'),
     ];
 
     return Row(
