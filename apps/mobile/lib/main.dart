@@ -6,10 +6,37 @@ import 'app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
+  await _loadEnvironment();
+  await _initializeSupabase();
   runApp(const NookApp());
+}
+
+Future<void> _loadEnvironment() async {
+  try {
+    await dotenv.load();
+  } catch (error) {
+    debugPrint('Failed to load .env: $error');
+  }
+}
+
+Future<void> _initializeSupabase() async {
+  final supabaseUrl = dotenv.env['SUPABASE_URL'];
+  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+
+  if (supabaseUrl == null ||
+      supabaseUrl.isEmpty ||
+      supabaseAnonKey == null ||
+      supabaseAnonKey.isEmpty) {
+    debugPrint('Skipped Supabase initialization: missing environment values.');
+    return;
+  }
+
+  try {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      publishableKey: supabaseAnonKey,
+    );
+  } catch (error) {
+    debugPrint('Failed to initialize Supabase: $error');
+  }
 }
