@@ -20,7 +20,7 @@ class MainShell extends StatelessWidget {
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: navigationShell.goBranch,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: '수집'),
+          NavigationDestination(icon: Icon(Icons.home_outlined), label: '홈'),
           NavigationDestination(
             icon: Icon(Icons.collections_bookmark_outlined),
             label: '글감함',

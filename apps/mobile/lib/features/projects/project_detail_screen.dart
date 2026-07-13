@@ -34,11 +34,21 @@ class ProjectDetailScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
-          Text(title, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 10),
-          Chip(
-            label: Text(isCompleted ? '완료' : '진행중'),
-            backgroundColor: isCompleted ? AppTheme.mist : AppTheme.paper,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Chip(
+                label: Text(isCompleted ? '완료' : '진행중'),
+                backgroundColor: isCompleted ? AppTheme.mist : AppTheme.paper,
+              ),
+            ],
           ),
           const SizedBox(height: 18),
           if (isCompleted) _ExportPanel(projectTitle: title),

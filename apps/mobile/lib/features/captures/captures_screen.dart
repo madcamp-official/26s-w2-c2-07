@@ -388,6 +388,7 @@ Future<bool> showConfirmDialog(
         builder: (context) => AlertDialog(
           title: Text(title),
           content: Text(message),
+          actionsAlignment: MainAxisAlignment.end,
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),

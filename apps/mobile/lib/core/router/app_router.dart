@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/login_screen.dart';
@@ -15,18 +16,26 @@ import '../../shared/main_shell.dart';
 final appRouter = GoRouter(
   initialLocation: '/login',
   routes: [
-    GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+    GoRoute(
+      path: '/login',
+      pageBuilder: (_, __) => _fadePage(const LoginScreen()),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (_, __, shell) => MainShell(navigationShell: shell),
       branches: [
         StatefulShellBranch(
-          routes: [GoRoute(path: '/', builder: (_, __) => const HomeScreen())],
+          routes: [
+            GoRoute(
+              path: '/',
+              pageBuilder: (_, __) => _fadePage(const HomeScreen()),
+            ),
+          ],
         ),
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/captures',
-              builder: (_, __) => const CapturesScreen(),
+              pageBuilder: (_, __) => _fadePage(const CapturesScreen()),
             ),
           ],
         ),
@@ -34,7 +43,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/projects',
-              builder: (_, __) => const ProjectsScreen(),
+              pageBuilder: (_, __) => _fadePage(const ProjectsScreen()),
             ),
           ],
         ),
@@ -42,7 +51,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/profile',
-              builder: (_, __) => const ProfileScreen(),
+              pageBuilder: (_, __) => _fadePage(const ProfileScreen()),
             ),
           ],
         ),
@@ -50,38 +59,74 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/capture',
-      builder: (_, state) => CaptureCreateScreen(
-        initialType: state.uri.queryParameters['type'] ?? 'text',
+      pageBuilder: (_, state) => _slidePage(
+        CaptureCreateScreen(
+          initialType: state.uri.queryParameters['type'] ?? 'text',
+        ),
       ),
     ),
     GoRoute(
       path: '/captures/:id',
-      builder: (_, state) => CaptureDetailScreen(
-        captureId: state.pathParameters['id']!,
+      pageBuilder: (_, state) => _slidePage(
+        CaptureDetailScreen(
+          captureId: state.pathParameters['id']!,
+        ),
       ),
     ),
     GoRoute(
       path: '/projects/new',
-      builder: (_, __) => const ProjectFormScreen(),
+      pageBuilder: (_, __) => _slidePage(const ProjectFormScreen()),
     ),
     GoRoute(
       path: '/projects/:id',
-      builder: (_, state) => ProjectDetailScreen(
-        projectId: state.pathParameters['id']!,
+      pageBuilder: (_, state) => _slidePage(
+        ProjectDetailScreen(
+          projectId: state.pathParameters['id']!,
+        ),
       ),
     ),
     GoRoute(
       path: '/projects/:id/edit',
-      builder: (_, state) => ProjectFormScreen(
-        projectId: state.pathParameters['id'],
+      pageBuilder: (_, state) => _slidePage(
+        ProjectFormScreen(
+          projectId: state.pathParameters['id'],
+        ),
       ),
     ),
     GoRoute(
       path: '/projects/:id/manuscripts/:manuscriptId',
-      builder: (_, state) => ManuscriptEditScreen(
-        projectId: state.pathParameters['id']!,
-        manuscriptId: state.pathParameters['manuscriptId']!,
+      pageBuilder: (_, state) => _slidePage(
+        ManuscriptEditScreen(
+          projectId: state.pathParameters['id']!,
+          manuscriptId: state.pathParameters['manuscriptId']!,
+        ),
       ),
     ),
   ],
 );
+
+CustomTransitionPage<void> _fadePage(Widget child) {
+  return CustomTransitionPage<void>(
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(opacity: animation, child: child);
+    },
+  );
+}
+
+CustomTransitionPage<void> _slidePage(Widget child) {
+  return CustomTransitionPage<void>(
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final tween = Tween<Offset>(
+        begin: const Offset(0.04, 0),
+        end: Offset.zero,
+      ).chain(CurveTween(curve: Curves.easeOutCubic));
+
+      return FadeTransition(
+        opacity: animation,
+        child: SlideTransition(position: animation.drive(tween), child: child),
+      );
+    },
+  );
+}
