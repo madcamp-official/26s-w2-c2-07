@@ -79,7 +79,7 @@
 ```text
 Next.js Web ─┐
              ├─ Bearer Access Token ─ Express REST API
-Expo Mobile ─┘                         ├─ Zod 입력 검증
+Flutter Mobile ─┘                     ├─ Zod 입력 검증
                                       ├─ 사용자 소유권 검증
                                       ├─ 링크 미리보기 / 문서 내보내기
                                       └─ Supabase
@@ -308,7 +308,7 @@ interface ApiCapture {
 ## 산출물 및 실행 방법
 
 - **산출물 설명:** 웹과 모바일에서 글감을 수집하고 웹에서 프로젝트·복수 원고로 발전시키는 Nook 프로토타입
-- **실행 환경:** Node.js, 웹 브라우저, Expo 지원 Android/iOS 기기 또는 에뮬레이터
+- **실행 환경:** Node.js, 웹 브라우저, Flutter 지원 Android/iOS 기기 또는 에뮬레이터
 - **실행 방법:** 각 앱의 환경 변수를 구성하고 backend, web, mobile을 순서대로 실행
 - **시연 영상 / 이미지:** (추후 추가)
 
@@ -327,11 +327,11 @@ cp .env.example .env
 npm install
 npm run dev
 
-# Mobile
+# Mobile (Flutter)
 cd apps/mobile
 cp .env.example .env
-npm install
-npm start
+flutter pub get
+flutter run
 ```
 
 ### 기술 구성
@@ -339,7 +339,7 @@ npm start
 | 분류 | 사용 기술 |
 |---|---|
 | 핵심 기술 | Cross-Platform 웹·모바일 데이터 연동 |
-| 실행 환경 | Next.js, Expo React Native, Node.js Express |
+| 실행 환경 | Next.js, Flutter, Node.js Express |
 | 데이터 저장 | Supabase PostgreSQL, Storage, Row Level Security |
 | 외부 API / 서비스 | Supabase Auth, 링크 미리보기 대상 웹 페이지 |
 | 기타 | TypeScript, Zod, PDF·DOCX·TXT 생성 라이브러리 |
@@ -447,6 +447,6 @@ npm start
 ### Cross-Platform
 
 - https://flutter.dev/
-- https://reactnative.dev/
-- https://docs.expo.dev/
-- https://kotlinlang.org/multiplatform/
+- https://docs.flutter.dev/
+- https://pub.dev/packages/supabase_flutter
+- https://pub.dev/packages/image_picker
