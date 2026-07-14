@@ -6,6 +6,7 @@ const { app, BrowserWindow, ipcMain, shell } = require("electron");
 
 const DEFAULT_WEB_APP_URL = "http://127.0.0.1:3000";
 const desktopRoot = path.resolve(__dirname, "..");
+const iconPath = path.join(desktopRoot, "assets", "icon.png");
 const env = readEnvFile(path.join(desktopRoot, ".env"));
 const configuredWebAppUrl = process.env.NOOK_WEB_APP_URL || env.NOOK_WEB_APP_URL;
 const backendUrl = process.env.NOOK_BACKEND_URL || env.NOOK_BACKEND_URL || "";
@@ -142,6 +143,7 @@ function createMainWindow() {
     minWidth: 1180,
     minHeight: 760,
     title: "Nook",
+    icon: iconPath,
     backgroundColor: "#f8f3ea",
     autoHideMenuBar: true,
     webPreferences: {
@@ -159,7 +161,7 @@ function createMainWindow() {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.loadURL(resolvedWebAppUrl);
     }
-  }, 1800);
+  }, 650);
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     const targetOrigin = new URL(url).origin;

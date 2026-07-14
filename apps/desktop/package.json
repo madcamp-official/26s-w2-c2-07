@@ -20,6 +20,7 @@
     },
     "files": [
       "src/**/*",
+      "assets/**/*",
       "web-bundle/**/*",
       ".env.example",
       "package.json"
@@ -28,6 +29,7 @@
       "web-bundle/**/*"
     ],
     "win": {
+      "icon": "assets/icon.ico",
       "target": [
         "nsis",
         "portable"
