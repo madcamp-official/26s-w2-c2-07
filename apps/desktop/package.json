@@ -8,8 +8,9 @@
     "dev": "node scripts/dev.mjs",
     "start": "electron .",
     "check": "node scripts/check.mjs",
-    "dist": "electron-builder --win",
-    "dist:dir": "electron-builder --win --dir"
+    "build:web": "npm --prefix ../web run build && node scripts/prepare-web-bundle.mjs",
+    "dist": "npm run build:web && electron-builder --win",
+    "dist:dir": "npm run build:web && electron-builder --win --dir"
   },
   "build": {
     "appId": "app.nook.desktop",
@@ -19,7 +20,12 @@
     },
     "files": [
       "src/**/*",
+      "web-bundle/**/*",
+      ".env.example",
       "package.json"
+    ],
+    "asarUnpack": [
+      "web-bundle/**/*"
     ],
     "win": {
       "target": [

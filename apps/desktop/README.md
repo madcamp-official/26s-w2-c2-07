@@ -41,6 +41,32 @@ $env:NOOK_WEB_APP_URL="http://127.0.0.1:3000"
 npm start
 ```
 
+## 데스크탑 환경 변수
+
+`apps/desktop/.env.example`을 복사해 `apps/desktop/.env`를 만들 수 있습니다.
+
+```bash
+cp .env.example .env
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+사용 가능한 값:
+
+```env
+NOOK_WEB_APP_URL=http://127.0.0.1:3000
+NOOK_BACKEND_URL=http://127.0.0.1:4000/api
+```
+
+- `NOOK_WEB_APP_URL`: 외부/개발 웹 프론트 주소를 직접 지정합니다.
+- `NOOK_BACKEND_URL`: 데스크탑 앱에서 우선 사용할 백엔드 API 주소입니다.
+
+`NOOK_WEB_APP_URL`을 비워두고 패키징하면 데스크탑 앱에 포함된 Next.js standalone 서버를 자동 실행합니다.
+
 ## 실행 파일 만들기
 
 처음 한 번:
@@ -64,10 +90,7 @@ npm run dist:dir
 
 빌드 결과는 `apps/desktop/release` 아래에 생성됩니다.
 
-중요: 현재 데스크탑 앱은 웹 UI와 완전히 동일하게 유지하기 위해 `apps/web` 화면을 URL로 로드하는 shell입니다. 따라서 배포 실행 파일을 사용자에게 전달하려면 다음 중 하나가 필요합니다.
-
-1. 운영용 웹 프론트 URL을 배포해두고 실행 시 `NOOK_WEB_APP_URL`로 지정
-2. 앱 내부에 Next.js production server를 함께 포함하도록 추가 패키징 작업 진행
+현재 `npm run dist`는 `apps/web`을 Next.js standalone으로 빌드한 뒤 Electron 패키지에 포함합니다. 그래서 별도의 웹 개발 서버 없이도 배포 파일만으로 UI가 실행됩니다.
 
 현재 구조에서 운영 웹 URL을 지정해 패키징/실행하는 예:
 
@@ -90,6 +113,24 @@ cd apps/desktop
 npm start
 ```
 
+## 오프라인 저장과 동기화
+
+데스크탑 앱은 백엔드 요청이 실패할 때 변경 요청을 로컬 JSON 파일에 저장합니다.
+
+- 저장 위치: Electron `userData` 디렉터리의 `offline-queue.json`
+- 저장 대상: `POST`, `PATCH`, `PUT`, `DELETE`
+- 동기화 시점: 이후 백엔드 요청이 성공하면 큐에 쌓인 요청을 순서대로 재전송
+
+이 기능은 백엔드가 잠시 꺼져 있어도 사용자가 만든 변경을 잃지 않기 위한 1차 로컬 우선 장치입니다. 충돌 해결이나 필드 단위 merge 정책은 아직 포함하지 않았습니다.
+
+## 로그인 유지
+
+Electron 세션 partition을 `persist:nook`로 고정해 Supabase 로그인 세션과 브라우저 저장소가 프로그램 재시작 후에도 유지됩니다. 사용자가 직접 로그아웃하지 않으면 다음 실행 때 다시 로그인하지 않아도 됩니다.
+
+## 시작 랜딩 화면
+
+앱 실행 직후 `Nook` 로고와 캐치프레이즈가 페이드 인된 뒤 웹 UI로 전환됩니다. 파일은 `src/splash.html`입니다.
+
 ## 구조
 
 ```text
@@ -109,3 +150,4 @@ apps/desktop
 - 외부 링크는 기본 브라우저로 열어 데스크탑 앱 내부 라우팅과 분리합니다.
 - 배포 패키징은 아직 추가하지 않았습니다. 배포가 필요해지면 `electron-builder` 또는 `electron-forge` 설정을 별도 커밋으로 추가합니다.
 - `electron-builder`로 Windows `nsis`, `portable` 패키징을 지원합니다.
+- 패키징 시 `web-bundle`이 포함되며, 이 폴더는 `npm run build:web`으로 생성됩니다.

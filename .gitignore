@@ -22,6 +22,7 @@ node_modules/
 .next/
 out/
 dist/
+apps/desktop/web-bundle/
 apps/desktop/release/
 
 # OS
