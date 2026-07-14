@@ -229,15 +229,17 @@ class _ExportPanelState extends State<_ExportPanel> {
     setState(() => isExporting = true);
     try {
       final result = await _projectsRepository.export(widget.projectId, format);
-      await Share.shareXFiles(
-        [
-          XFile.fromData(
-            Uint8List.fromList(result.bytes),
-            name: result.filename,
-            mimeType: result.contentType,
-          ),
-        ],
-        subject: result.filename,
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              Uint8List.fromList(result.bytes),
+              name: result.filename,
+              mimeType: result.contentType,
+            ),
+          ],
+          subject: result.filename,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
