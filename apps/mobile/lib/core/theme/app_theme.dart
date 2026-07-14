@@ -1,28 +1,63 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppTheme {
-  static const cream = Color(0xFFF8F6F1);
-  static const paper = Color(0xFFFFFEFA);
-  static const ink = Color(0xFF292A26);
-  static const sage = Color(0xFF667267);
-  static const moss = Color(0xFF3F5F52);
-  static const clay = Color(0xFFB88968);
-  static const mist = Color(0xFFE8ECE4);
+  static const cream = Color(0xFFF8F3EA);
+  static const paper = Color(0xFFFFFCF6);
+  static const ink = Color(0xFF2E2721);
+  static const sage = Color(0xFF8C6F55);
+  static const moss = Color(0xFF6F4E37);
+  static const clay = Color(0xFFC58E63);
+  static const mist = Color(0xFFF1E5D6);
+  static const line = Color(0xFFE6D7C5);
+  static const muted = Color(0xFF8B7A6B);
+  static const coffee = Color(0xFF4B3428);
 
   static ThemeData get light => ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: cream,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: sage,
+          seedColor: moss,
+          primary: moss,
+          secondary: clay,
           surface: paper,
+          surfaceContainerHighest: mist,
           brightness: Brightness.light,
         ),
+        fontFamily: 'Noto Sans KR',
+        fontFamilyFallback: const [
+          'Noto Sans CJK KR',
+          'Apple SD Gothic Neo',
+          'Malgun Gothic',
+          'sans-serif',
+        ],
         textTheme: const TextTheme(
-          displaySmall: TextStyle(fontWeight: FontWeight.w700, color: ink),
-          headlineSmall: TextStyle(fontWeight: FontWeight.w700, color: ink),
-          titleLarge: TextStyle(fontWeight: FontWeight.w700, color: ink),
-          titleMedium: TextStyle(fontWeight: FontWeight.w700, color: ink),
-          bodyMedium: TextStyle(height: 1.45, color: ink),
+          displaySmall: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: ink,
+            letterSpacing: -0.8,
+            height: 1.2,
+          ),
+          headlineSmall: TextStyle(
+            fontFamily: 'Gowun Batang',
+            fontWeight: FontWeight.w700,
+            color: ink,
+            letterSpacing: -0.7,
+            height: 1.35,
+          ),
+          titleLarge: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: ink,
+            letterSpacing: -0.4,
+            height: 1.3,
+          ),
+          titleMedium: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: ink,
+            letterSpacing: -0.3,
+            height: 1.35,
+          ),
+          bodyMedium: TextStyle(height: 1.55, color: ink, letterSpacing: -0.2),
+          bodySmall: TextStyle(height: 1.45, color: muted, letterSpacing: -0.2),
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: cream,
@@ -34,8 +69,16 @@ abstract final class AppTheme {
           filled: true,
           fillColor: paper,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(18),
             borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: line),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: clay),
           ),
         ),
         filledButtonTheme: FilledButtonThemeData(
@@ -43,15 +86,35 @@ abstract final class AppTheme {
             backgroundColor: moss,
             foregroundColor: Colors.white,
             minimumSize: const Size.fromHeight(52),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
           ),
         ),
         cardTheme: CardThemeData(
           color: paper,
           elevation: 0,
           margin: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+            side: const BorderSide(color: line),
+          ),
+        ),
+        chipTheme: ChipThemeData(
+          backgroundColor: mist,
+          selectedColor: clay.withValues(alpha: 0.22),
+          labelStyle: const TextStyle(color: coffee),
+          side: BorderSide.none,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: paper,
+          indicatorColor: mist,
+          labelTextStyle: WidgetStateProperty.all(
+            const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
         ),
       );
 }

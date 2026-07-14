@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/theme/app_theme.dart';
+
 class MainShell extends StatelessWidget {
   const MainShell({required this.navigationShell, super.key});
 
@@ -13,6 +15,8 @@ class MainShell extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         tooltip: '글감 남기기',
         onPressed: () => context.push('/capture'),
+        backgroundColor: AppTheme.coffee,
+        foregroundColor: Colors.white,
         child: const Icon(Icons.edit_note),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -30,7 +34,9 @@ class MainShell extends StatelessWidget {
             label: '프로젝트',
           ),
           NavigationDestination(
-              icon: Icon(Icons.explore_outlined), label: '서핑'),
+            icon: Icon(Icons.explore_outlined),
+            label: '서핑',
+          ),
         ],
       ),
     );
@@ -47,6 +53,10 @@ class ProfileAction extends StatelessWidget {
       child: IconButton.filledTonal(
         tooltip: '내 프로필',
         onPressed: () => context.go('/profile'),
+        style: IconButton.styleFrom(
+          backgroundColor: AppTheme.mist,
+          foregroundColor: AppTheme.coffee,
+        ),
         icon: const Icon(Icons.person_outline),
       ),
     );

@@ -31,7 +31,7 @@ final appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/login',
-      pageBuilder: (_, __) => _fadePage(const LoginScreen()),
+      pageBuilder: (_, __) => _slidePage(const LoginScreen()),
     ),
     StatefulShellRoute.indexedStack(
       builder: (_, __, shell) => MainShell(navigationShell: shell),
@@ -40,7 +40,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/',
-              pageBuilder: (_, __) => _fadePage(const HomeScreen()),
+              pageBuilder: (_, __) => _slidePage(const HomeScreen()),
             ),
           ],
         ),
@@ -48,7 +48,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/captures',
-              pageBuilder: (_, __) => _fadePage(const CapturesScreen()),
+              pageBuilder: (_, __) => _slidePage(const CapturesScreen()),
             ),
           ],
         ),
@@ -56,7 +56,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/projects',
-              pageBuilder: (_, __) => _fadePage(const ProjectsScreen()),
+              pageBuilder: (_, __) => _slidePage(const ProjectsScreen()),
             ),
           ],
         ),
@@ -64,7 +64,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/surf',
-              pageBuilder: (_, __) => _fadePage(const SurfScreen()),
+              pageBuilder: (_, __) => _slidePage(const SurfScreen()),
             ),
           ],
         ),
@@ -141,27 +141,27 @@ class _GoRouterRefreshStream extends ChangeNotifier {
   }
 }
 
-CustomTransitionPage<void> _fadePage(Widget child) {
-  return CustomTransitionPage<void>(
-    child: child,
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return FadeTransition(opacity: animation, child: child);
-    },
-  );
-}
-
 CustomTransitionPage<void> _slidePage(Widget child) {
   return CustomTransitionPage<void>(
+    transitionDuration: const Duration(milliseconds: 280),
+    reverseTransitionDuration: const Duration(milliseconds: 240),
     child: child,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final tween = Tween<Offset>(
-        begin: const Offset(0.04, 0),
+      final primaryTween = Tween<Offset>(
+        begin: const Offset(1, 0),
         end: Offset.zero,
-      ).chain(CurveTween(curve: Curves.easeOutCubic));
+      ).chain(CurveTween(curve: Curves.easeOutQuart));
+      final secondaryTween = Tween<Offset>(
+        begin: Offset.zero,
+        end: const Offset(-0.12, 0),
+      ).chain(CurveTween(curve: Curves.easeOutQuart));
 
-      return FadeTransition(
-        opacity: animation,
-        child: SlideTransition(position: animation.drive(tween), child: child),
+      return SlideTransition(
+        position: secondaryAnimation.drive(secondaryTween),
+        child: SlideTransition(
+          position: animation.drive(primaryTween),
+          child: child,
+        ),
       );
     },
   );

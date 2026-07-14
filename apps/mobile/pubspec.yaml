@@ -28,3 +28,13 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+  fonts:
+    - family: Noto Sans KR
+      fonts:
+        - asset: assets/fonts/NotoSansKR.ttf
+    - family: Gowun Batang
+      fonts:
+        - asset: assets/fonts/GowunBatang-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/GowunBatang-Bold.ttf
+          weight: 700
