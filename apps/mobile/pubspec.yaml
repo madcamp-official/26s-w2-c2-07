@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   flutter_dotenv: ^5.2.1
+  fvp: ^0.37.3
   go_router: ^14.8.1
   http: ^1.3.0
   image_picker: ^1.1.2
