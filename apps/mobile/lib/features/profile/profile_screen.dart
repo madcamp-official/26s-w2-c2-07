@@ -46,6 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _capturesRepository.list(),
         _projectsRepository.list(),
       ]);
+      if (!mounted) return;
       final loadedProfile = results[0] as Profile;
       final captures = results[1] as List;
       final projects = results[2] as List<Project>;
@@ -56,6 +57,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         loadError = e;
         isLoading = false;

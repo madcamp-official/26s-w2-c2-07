@@ -149,6 +149,15 @@ class ApiClient {
     return payload is String && payload.isNotEmpty ? payload : null;
   }
 
+  // Shared across every ApiClient instance so concurrent 401s from multiple
+  // screens await the same in-flight refresh instead of each calling
+  // auth.refreshSession() independently. Supabase rotates refresh tokens on
+  // use, so parallel calls with the same stale token would otherwise race:
+  // only the first succeeds and the rest fail as "already used", which was
+  // triggering a signOut() and wiping the session that the first call just
+  // obtained.
+  static Future<String?>? _pendingRefresh;
+
   Future<String> _requireAccessToken({bool forceRefresh = false}) async {
     final auth = Supabase.instance.client.auth;
     final currentToken = auth.currentSession?.accessToken;
@@ -157,20 +166,26 @@ class ApiClient {
       return currentToken;
     }
 
-    try {
-      final refreshed = await auth.refreshSession();
-      final refreshedToken =
-          refreshed.session?.accessToken ?? auth.currentSession?.accessToken;
+    final refreshedToken = await (_pendingRefresh ??= _refreshOnce());
+    _pendingRefresh = null;
 
-      if (refreshedToken != null && refreshedToken.isNotEmpty) {
-        return refreshedToken;
-      }
-    } catch (_) {
-      // The app will surface the auth error below and route the user back to login.
+    if (refreshedToken != null && refreshedToken.isNotEmpty) {
+      return refreshedToken;
     }
 
     await auth.signOut();
     throw const AuthRequiredException();
+  }
+
+  Future<String?> _refreshOnce() async {
+    final auth = Supabase.instance.client.auth;
+
+    try {
+      final refreshed = await auth.refreshSession();
+      return refreshed.session?.accessToken ?? auth.currentSession?.accessToken;
+    } catch (_) {
+      return null;
+    }
   }
 }
 
