@@ -50,13 +50,7 @@ class ApiClient {
 
   /// For endpoints that return a binary body (e.g. project export) instead of JSON.
   Future<http.Response> getRaw(String path) async {
-    final token = await _requireAccessToken();
-    final request = http.Request('GET', Uri.parse('$_baseUrl$path'))
-      ..headers.addAll({
-        'Authorization': 'Bearer $token',
-      });
-
-    final response = await http.Response.fromStream(await _client.send(request));
+    final response = await _send('GET', path);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(response.statusCode, _errorMessage(response.body));
     }
@@ -64,21 +58,69 @@ class ApiClient {
   }
 
   Future<dynamic> _request(String method, String path, {Object? body}) async {
-    final token = await _requireAccessToken();
-    final request = http.Request(method, Uri.parse('$_baseUrl$path'))
-      ..headers.addAll({
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      });
-    if (body != null) request.body = jsonEncode(body);
-
-    final response =
-        await http.Response.fromStream(await _client.send(request));
+    final response = await _send(method, path, body: body);
     final payload = _tryDecodeJson(response.body);
+
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(response.statusCode, _errorMessage(response.body));
     }
+
     return payload;
+  }
+
+  Future<http.Response> _send(
+    String method,
+    String path, {
+    Object? body,
+  }) async {
+    final firstToken = await _requireAccessToken();
+    final firstResponse = await _sendOnce(
+      method,
+      path,
+      accessToken: firstToken,
+      body: body,
+    );
+
+    if (!_isMissingAccessToken(firstResponse)) return firstResponse;
+
+    final refreshedToken = await _requireAccessToken(forceRefresh: true);
+    return _sendOnce(
+      method,
+      path,
+      accessToken: refreshedToken,
+      body: body,
+    );
+  }
+
+  Future<http.Response> _sendOnce(
+    String method,
+    String path, {
+    required String accessToken,
+    Object? body,
+  }) {
+    final uri = Uri.parse('$_baseUrl$path');
+    final headers = {
+      'content-type': 'application/json',
+      'authorization': 'Bearer $accessToken',
+    };
+    final encodedBody = body == null ? null : jsonEncode(body);
+
+    switch (method) {
+      case 'GET':
+        return _client.get(uri, headers: headers);
+      case 'POST':
+        return _client.post(uri, headers: headers, body: encodedBody);
+      case 'PATCH':
+        return _client.patch(uri, headers: headers, body: encodedBody);
+      case 'DELETE':
+        return _client.delete(uri, headers: headers);
+      default:
+        return _client.send(
+          http.Request(method, uri)
+            ..headers.addAll(headers)
+            ..body = encodedBody ?? '',
+        ).then(http.Response.fromStream);
+    }
   }
 
   dynamic _tryDecodeJson(String body) {
@@ -89,6 +131,11 @@ class ApiClient {
     } catch (_) {
       return body;
     }
+  }
+
+  bool _isMissingAccessToken(http.Response response) {
+    if (response.statusCode != 401) return false;
+    return _errorMessage(response.body) == 'Missing access token';
   }
 
   String? _errorMessage(String body) {
@@ -102,11 +149,11 @@ class ApiClient {
     return payload is String && payload.isNotEmpty ? payload : null;
   }
 
-  Future<String> _requireAccessToken() async {
+  Future<String> _requireAccessToken({bool forceRefresh = false}) async {
     final auth = Supabase.instance.client.auth;
     final currentToken = auth.currentSession?.accessToken;
 
-    if (currentToken != null && currentToken.isNotEmpty) {
+    if (!forceRefresh && currentToken != null && currentToken.isNotEmpty) {
       return currentToken;
     }
 
