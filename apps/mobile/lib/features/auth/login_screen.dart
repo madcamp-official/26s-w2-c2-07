@@ -29,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
         await Supabase.instance.client.auth.signInWithOAuth(
           OAuthProvider.google,
           redirectTo: 'io.supabase.nook://login-callback/',
-          authScreenLaunchMode: LaunchMode.inAppWebView,
+          authScreenLaunchMode: LaunchMode.externalApplication,
         );
       }
       // go_router's redirect (driven by onAuthStateChange) takes over from here.
