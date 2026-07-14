@@ -11,6 +11,7 @@
   <component name="ChangeListManager">
     <list default="true" id="b7de32ab-b699-49c0-81ae-e4045d83835c" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/features/captures/capture_detail_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/captures/capture_detail_screen.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/nook_mobile.iml" beforeDir="false" afterPath="$PROJECT_DIR$/nook_mobile.iml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -64,7 +65,7 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "login",
+    "git-widget-placeholder": "media__window",
     "io.flutter.project.isFirstOpen": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/Seoyoung/vscode/madcamp/26s-w2-c2-07/apps/mobile",

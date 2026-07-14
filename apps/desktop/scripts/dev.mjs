@@ -27,7 +27,7 @@ function findAvailablePort(startPort = 3000) {
     server.listen(startPort, "127.0.0.1", () => {
       const address = server.address();
       const port = typeof address === "object" && address ? address.port : startPort;
-      server.close(() => resolve(port));
+      server.close(() => setTimeout(() => resolve(port), 250));
     });
 
     server.on("error", () => {
@@ -95,12 +95,12 @@ process.on("SIGTERM", () => {
 const webPort = configuredWebUrl
   ? undefined
   : await findAvailablePort(Number.isFinite(preferredWebPort) ? preferredWebPort : 3000);
-const webUrl = configuredWebUrl || `http://127.0.0.1:${webPort}`;
+const webUrl = configuredWebUrl || `http://localhost:${webPort}`;
 
 if (!configuredWebUrl) {
   const web = run(
     npmCommand,
-    ["run", "dev", "--", "--hostname", "127.0.0.1", "--port", String(webPort)],
+    ["run", "dev", "--", "--hostname", "localhost", "--port", String(webPort)],
     { cwd: webRoot }
   );
 

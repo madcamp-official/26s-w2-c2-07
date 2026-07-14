@@ -332,7 +332,7 @@ class _MediaPreviewState extends State<_MediaPreview> {
           alignment: Alignment.center,
           children: [
             FittedBox(
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               child: SizedBox(
                 width: controller.value.size.width,
                 height: controller.value.size.height,
@@ -350,7 +350,7 @@ class _MediaPreviewState extends State<_MediaPreview> {
       );
     }
     return item.imageUrl != null
-        ? Image.network(item.imageUrl!, fit: BoxFit.cover)
+        ? Image.network(item.imageUrl!, fit: BoxFit.contain)
         : Icon(captureTypeIcon(item.type), size: 48, color: AppTheme.coffee);
   }
 }
