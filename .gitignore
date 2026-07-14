@@ -22,6 +22,7 @@ node_modules/
 .next/
 out/
 dist/
+apps/desktop/release/
 
 # OS
 .DS_Store

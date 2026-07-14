@@ -10,14 +10,19 @@ const webRoot = path.join(repoRoot, "apps", "web");
 const webPort = process.env.NOOK_WEB_PORT || "3000";
 const webUrl = process.env.NOOK_WEB_APP_URL || `http://127.0.0.1:${webPort}`;
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-const electronBin = process.platform === "win32" ? "electron.cmd" : "electron";
+const electronBin = path.join(
+  desktopRoot,
+  "node_modules",
+  ".bin",
+  process.platform === "win32" ? "electron.cmd" : "electron"
+);
 
 const children = new Set();
 
 function run(command, args, options = {}) {
   const child = spawn(command, args, {
     stdio: "inherit",
-    shell: false,
+    shell: process.platform === "win32",
     ...options
   });
 
