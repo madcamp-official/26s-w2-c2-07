@@ -19,6 +19,7 @@ class Capture {
     this.linkDescription,
     this.linkImageUrl,
     this.imageUrl,
+    this.isShared = false,
     this.tags = const [],
     required this.createdAt,
     required this.updatedAt,
@@ -32,6 +33,7 @@ class Capture {
   final String? linkDescription;
   final String? linkImageUrl;
   final String? imageUrl;
+  final bool isShared;
   final List<Tag> tags;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -52,7 +54,9 @@ class Capture {
         final text = content?.trim() ?? '';
         if (text.isEmpty) return '(내용 없음)';
         final firstLine = text.split('\n').first;
-        return firstLine.length > 40 ? '${firstLine.substring(0, 40)}…' : firstLine;
+        return firstLine.length > 40
+            ? '${firstLine.substring(0, 40)}…'
+            : firstLine;
     }
   }
 
@@ -66,6 +70,7 @@ class Capture {
       linkDescription: json['link_description'] as String?,
       linkImageUrl: json['link_image_url'] as String?,
       imageUrl: json['image_url'] as String?,
+      isShared: json['is_shared'] as bool? ?? false,
       tags: (json['tags'] as List<dynamic>? ?? [])
           .map((tag) => Tag.fromJson(tag as Map<String, dynamic>))
           .toList(),

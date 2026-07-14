@@ -2,14 +2,17 @@ import '../../core/network/api_client.dart';
 import '../models/capture.dart';
 
 class CapturesRepository {
-  CapturesRepository({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+  CapturesRepository({ApiClient? apiClient})
+      : _apiClient = apiClient ?? ApiClient();
 
   final ApiClient _apiClient;
 
   Future<List<Capture>> list({CaptureType? type}) async {
     final query = type != null ? '?type=${type.name}' : '';
     final data = await _apiClient.get('/captures$query') as List<dynamic>;
-    return data.map((json) => Capture.fromJson(json as Map<String, dynamic>)).toList();
+    return data
+        .map((json) => Capture.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   Future<Capture> get(String id) async {
@@ -37,11 +40,13 @@ class CapturesRepository {
     String? content,
     String? url,
     List<String>? tagIds,
+    bool? isShared,
   }) async {
     final data = await _apiClient.patch('/captures/$id', body: {
       if (content != null) 'content': content,
       if (url != null) 'url': url,
       if (tagIds != null) 'tagIds': tagIds,
+      if (isShared != null) 'isShared': isShared,
     }) as Map<String, dynamic>;
     return Capture.fromJson(data);
   }
@@ -53,7 +58,8 @@ class CapturesRepository {
     required String fileName,
     required String contentType,
   }) async {
-    final data = await _apiClient.post('/captures/$captureId/assets/upload-url', body: {
+    final data =
+        await _apiClient.post('/captures/$captureId/assets/upload-url', body: {
       'fileName': fileName,
       'contentType': contentType,
     }) as Map<String, dynamic>;
