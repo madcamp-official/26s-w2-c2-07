@@ -43,7 +43,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       setState(() {
         projects = projectList;
         documentsByProject = {
-          for (var i = 0; i < projectList.length; i++) projectList[i].id: documentsList[i],
+          for (var i = 0; i < projectList.length; i++)
+            projectList[i].id: documentsList[i],
         };
         _loading = false;
       });
@@ -61,7 +62,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   Future<void> openManuscript(String projectId, String manuscriptId) async {
-    final changed = await context.push<bool>('/projects/$projectId/manuscripts/$manuscriptId');
+    final changed = await context
+        .push<bool>('/projects/$projectId/manuscripts/$manuscriptId');
     if (changed == true) load();
   }
 
@@ -98,7 +100,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 48),
                 child: Column(
                   children: [
-                    Text('프로젝트를 불러오지 못했습니다.\n$_error', textAlign: TextAlign.center),
+                    Text('프로젝트를 불러오지 못했습니다.\n$_error',
+                        textAlign: TextAlign.center),
                     const SizedBox(height: 8),
                     OutlinedButton(onPressed: load, child: const Text('다시 시도')),
                   ],
@@ -144,7 +147,7 @@ class _ProjectCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(22),
         onTap: () => context.push('/projects/${project.id}'),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -176,8 +179,9 @@ class _ProjectCard extends StatelessWidget {
                   leading: const Icon(Icons.article_outlined),
                   title: Text(manuscript.title),
                   trailing: IconButton(
-                    tooltip: '원고 작성',
-                    onPressed: () => onOpenManuscript(manuscript.id),
+                    tooltip: isDone ? '완료된 프로젝트는 수정할 수 없어요' : '원고 작성',
+                    onPressed:
+                        isDone ? null : () => onOpenManuscript(manuscript.id),
                     icon: const Icon(Icons.edit_outlined),
                   ),
                 ),

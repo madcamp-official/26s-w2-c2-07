@@ -60,13 +60,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   Future<void> openEdit() async {
-    final changed = await context.push<bool>('/projects/${widget.projectId}/edit');
+    final changed =
+        await context.push<bool>('/projects/${widget.projectId}/edit');
     if (changed == true) load();
   }
 
   Future<void> openManuscript(String manuscriptId) async {
-    final changed =
-        await context.push<bool>('/projects/${widget.projectId}/manuscripts/$manuscriptId');
+    final changed = await context
+        .push<bool>('/projects/${widget.projectId}/manuscripts/$manuscriptId');
     if (changed == true) load();
   }
 
@@ -78,7 +79,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         actions: [
           IconButton(
             tooltip: '수정',
-            onPressed: openEdit,
+            onPressed: project?.isDone == true ? null : openEdit,
             icon: const Icon(Icons.edit_outlined),
           ),
           const ProfileAction(),
@@ -125,13 +126,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             ),
           ],
         ),
-        if (currentProject.description != null && currentProject.description!.isNotEmpty) ...[
+        if (currentProject.description != null &&
+            currentProject.description!.isNotEmpty) ...[
           const SizedBox(height: 10),
           Text(currentProject.description!),
         ],
         const SizedBox(height: 18),
-        _ExportPanel(projectId: currentProject.id, projectTitle: currentProject.title),
-        const SizedBox(height: 18),
+        if (isDone)
+          _ExportPanel(
+            projectId: currentProject.id,
+            projectTitle: currentProject.title,
+          ),
+        if (isDone) const SizedBox(height: 18),
         Text('원고', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 10),
         for (final manuscript in documents)
@@ -139,10 +145,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             child: ListTile(
               leading: const Icon(Icons.article_outlined),
               title: Text(manuscript.title),
-              onTap: () => openManuscript(manuscript.id),
+              subtitle: isDone ? const Text('완료된 프로젝트는 원고 수정이 잠겨 있어요.') : null,
+              onTap: isDone ? null : () => openManuscript(manuscript.id),
               trailing: IconButton(
-                tooltip: '삭제',
-                onPressed: () => _confirmDeleteManuscript(manuscript),
+                tooltip: isDone ? '완료된 프로젝트는 삭제할 수 없어요' : '삭제',
+                onPressed:
+                    isDone ? null : () => _confirmDeleteManuscript(manuscript),
                 icon: const Icon(Icons.delete_outline),
               ),
             ),
@@ -190,7 +198,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     try {
       await _documentsRepository.delete(widget.projectId, manuscript.id);
       if (!mounted) return;
-      setState(() => documents = documents.where((d) => d.id != manuscript.id).toList());
+      setState(() =>
+          documents = documents.where((d) => d.id != manuscript.id).toList());
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${manuscript.title} 원고를 삭제했습니다.')),
       );
@@ -253,7 +262,11 @@ class _ExportPanelState extends State<_ExportPanel> {
             Wrap(
               spacing: 8,
               children: [
-                for (final format in const {'PDF': 'pdf', 'DOCX': 'docx', 'TXT': 'txt'}.entries)
+                for (final format in const {
+                  'PDF': 'pdf',
+                  'DOCX': 'docx',
+                  'TXT': 'txt'
+                }.entries)
                   ActionChip(
                     label: Text(format.key),
                     onPressed: isExporting ? null : () => export(format.value),
