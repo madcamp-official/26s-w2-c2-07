@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { ApiProfile } from "../api-types";
 import { PageHead, Shell } from "../components";
+import { readCachedProfile, writeCachedProfile } from "../profile-cache";
 import { supabase } from "../supabase-client";
 import { useRouter } from "next/navigation";
 
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const load = () =>
     api.get<ApiProfile>("/me").then((result) => {
       setProfile(result);
+      writeCachedProfile(result);
       setDraft({
         displayName: result.display_name ?? "",
         avatarUrl: result.avatar_url ?? "",
@@ -25,7 +27,15 @@ export default function ProfilePage() {
     });
 
   useEffect(() => {
-    void load();
+    const cachedProfile = readCachedProfile();
+    if (cachedProfile) {
+      setProfile(cachedProfile);
+      setDraft({
+        displayName: cachedProfile.display_name ?? "",
+        avatarUrl: cachedProfile.avatar_url ?? "",
+      });
+    }
+    void load().catch(() => undefined);
   }, []);
 
   const save = async (event: React.FormEvent) => {
@@ -46,6 +56,7 @@ export default function ProfilePage() {
       alert("API 연결이 필요합니다");
       return;
     }
+    writeCachedProfile(null);
     await supabase.auth.signOut();
     router.push("/login");
   };

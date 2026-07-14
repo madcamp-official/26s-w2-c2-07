@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import http from "node:http";
+import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,8 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(__dirname, "..");
 const repoRoot = path.resolve(desktopRoot, "..", "..");
 const webRoot = path.join(repoRoot, "apps", "web");
-const webPort = process.env.NOOK_WEB_PORT || "3000";
-const webUrl = process.env.NOOK_WEB_APP_URL || `http://127.0.0.1:${webPort}`;
+const preferredWebPort = Number.parseInt(process.env.NOOK_WEB_PORT || "3000", 10);
+const configuredWebUrl = process.env.NOOK_WEB_APP_URL;
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 const electronBin = path.join(
   desktopRoot,
@@ -18,6 +19,22 @@ const electronBin = path.join(
 );
 
 const children = new Set();
+
+function findAvailablePort(startPort = 3000) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+
+    server.listen(startPort, "127.0.0.1", () => {
+      const address = server.address();
+      const port = typeof address === "object" && address ? address.port : startPort;
+      server.close(() => resolve(port));
+    });
+
+    server.on("error", () => {
+      resolve(findAvailablePort(startPort + 1));
+    });
+  });
+}
 
 function run(command, args, options = {}) {
   const child = spawn(command, args, {
@@ -75,15 +92,22 @@ process.on("SIGTERM", () => {
   process.exit(143);
 });
 
-const web = run(
-  npmCommand,
-  ["run", "dev", "--", "--hostname", "127.0.0.1", "--port", webPort],
-  { cwd: webRoot }
-);
+const webPort = configuredWebUrl
+  ? undefined
+  : await findAvailablePort(Number.isFinite(preferredWebPort) ? preferredWebPort : 3000);
+const webUrl = configuredWebUrl || `http://127.0.0.1:${webPort}`;
 
-web.on("exit", (code) => {
-  if (code !== 0) process.exit(code ?? 1);
-});
+if (!configuredWebUrl) {
+  const web = run(
+    npmCommand,
+    ["run", "dev", "--", "--hostname", "127.0.0.1", "--port", String(webPort)],
+    { cwd: webRoot }
+  );
+
+  web.on("exit", (code) => {
+    if (code !== 0) process.exit(code ?? 1);
+  });
+}
 
 await waitForWebApp(webUrl);
 
