@@ -25,6 +25,8 @@ export interface ApiCapture {
   created_at: string;
   updated_at: string;
   tags: ApiCaptureTag[];
+  is_shared?: boolean;
+  shared_visibility?: "visible" | "limited";
   isLinked?: boolean;
 }
 
@@ -73,4 +75,15 @@ export interface ApiProfile {
 export interface ApiSettings {
   captureAlertsEnabled: boolean;
   darkEditorEnabled: boolean;
+}
+
+export interface ApiSharedCapture extends ApiCapture {
+  creator: {
+    id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  };
+  saved_count: number;
+  report_count: number;
+  visibility: "visible" | "limited";
 }

@@ -26,6 +26,7 @@ export default function NewCapturePage() {
   const [memo, setMemo] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isShared, setIsShared] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tags, setTags] = useState<ApiTag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -71,6 +72,7 @@ export default function NewCapturePage() {
         content: type === "text" ? text : memo || undefined,
         url: type === "link" ? url : undefined,
         tagIds: selectedTagIds,
+        isShared,
       });
 
       if ((type === "photo" || type === "video") && file) {
@@ -219,6 +221,19 @@ export default function NewCapturePage() {
               </button>
             </form>
           </fieldset>
+          <label className="share-toggle">
+            <input
+              type="checkbox"
+              checked={isShared}
+              onChange={(event) => setIsShared(event.target.checked)}
+            />
+            <span>
+              <b>글감 서핑에 공유</b>
+              <small>
+                다른 사용자가 이 글감을 검색하고 자신의 글감함에 담을 수 있어요.
+              </small>
+            </span>
+          </label>
           <div className="form-actions">
             <button className="button ghost" onClick={() => router.back()}>
               취소

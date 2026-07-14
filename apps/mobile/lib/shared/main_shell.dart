@@ -29,7 +29,8 @@ class MainShell extends StatelessWidget {
             icon: Icon(Icons.folder_copy_outlined),
             label: '프로젝트',
           ),
-          NavigationDestination(icon: Icon(Icons.person_outline), label: '프로필'),
+          NavigationDestination(
+              icon: Icon(Icons.explore_outlined), label: '서핑'),
         ],
       ),
     );

@@ -11,6 +11,7 @@ import '../../features/projects/manuscript_edit_screen.dart';
 import '../../features/projects/project_detail_screen.dart';
 import '../../features/projects/project_form_screen.dart';
 import '../../features/projects/projects_screen.dart';
+import '../../features/surf/surf_screen.dart';
 import '../../shared/main_shell.dart';
 
 final appRouter = GoRouter(
@@ -50,8 +51,8 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/profile',
-              pageBuilder: (_, __) => _fadePage(const ProfileScreen()),
+              path: '/surf',
+              pageBuilder: (_, __) => _fadePage(const SurfScreen()),
             ),
           ],
         ),
@@ -64,6 +65,10 @@ final appRouter = GoRouter(
           initialType: state.uri.queryParameters['type'] ?? 'text',
         ),
       ),
+    ),
+    GoRoute(
+      path: '/profile',
+      pageBuilder: (_, __) => _slidePage(const ProfileScreen()),
     ),
     GoRoute(
       path: '/captures/:id',

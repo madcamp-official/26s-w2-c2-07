@@ -43,6 +43,7 @@
 - **핵심 구현 요소:**
   - 웹과 모바일에서 같은 Supabase Auth 계정 및 글감 데이터 사용
   - 조각글·사진·링크, 다중 태그, 프로젝트·원고 관리
+  - 다른 사용자가 공유한 글감을 검색·서핑하고 내 글감함에 담는 공유 글감 탐색
   - 원고 자동 저장과 완료 프로젝트 PDF·DOCX·TXT 내보내기
 - **사용 / 시연 시나리오:** Google 로그인 → 모바일 또는 웹에서 태그와 글감 저장 → 웹 글감함에서 수정·검색 → 프로젝트에 글감 연결 → 여러 원고 작성 → 프로젝트 완료 → 파일 내보내기
 - **팀원별 역할:** 웹·백엔드·모바일을 기능 단위로 분담하고 API 계약, 인증, 통합 QA는 공동 검증한다.
@@ -68,6 +69,7 @@
 | 인증·프로필 | Google 로그인 계정과 프로필을 동일 사용자 ID로 연동 | 필수 |
 | 글감·태그 | 글감 CRUD, 작성 중 태그 생성, 다중 태그 연결, 검색·필터 | 필수 |
 | 프로젝트·원고 | 상태별 프로젝트, 전체 글감 연결 모달, 복수 원고, 멱등 생성, 자동 저장 | 필수 |
+| 글감 서핑 | 공유 글감 검색, 내 글감함에 추가, 신고·노출 제한·알림 흐름 | 필수 |
 | Cross-Platform | 모바일에서 저장한 글감을 별도 설정 없이 웹에 동기화 | 필수 |
 | 내보내기 | 완료 프로젝트를 PDF·DOCX·TXT로 다운로드 | 선택 |
 | 사용자 설정 | 실제 저장되는 알림·편집 화면 설정 | 선택 |
@@ -100,7 +102,9 @@ Flutter Mobile ─┘                     ├─ Zod 입력 검증
 
 <!-- Figma 링크, 화면 이미지, CLI 사용 예시, 앱 화면 등 -->
 - 웹: 로그인, 홈, 글감함, 글감 작성·상세·수정, 프로젝트 목록·상세, 원고 편집, 프로필, 설정
-- 모바일: 로그인, 최근 글감, 조각글·사진·링크 작성, 글감 상세, 프로필
+- 모바일: 로그인, 최근 글감, 조각글·사진·동영상·링크 작성, 글감 상세, 글감 서핑, 프로필
+- 글감 서핑은 Pinterest처럼 다른 사용자가 공유한 글감을 카드형으로만 보여주며, 텍스트 검색과 상세 모달을 제공한다.
+- 공유 글감 상세에서는 내 글감함에 추가하거나 부적절한 글감으로 신고할 수 있다.
 - 프로젝트 목록은 `진행 중`과 `완료` 섹션으로 구분한다.
 - 프로젝트 상태는 정보 수정 모달이 아닌 별도 `완료하기` / `다시 진행하기` 버튼으로 변경한다.
 - 프로젝트 글감 연결 모달과 원고 편집 패널은 사용자의 모든 글감을 검색한다.
@@ -118,6 +122,8 @@ auth.users
   ├─ captures
   │   ├─ capture_assets
   │   ├─ capture_tags ─ tags
+  │   ├─ shared_capture_saves
+  │   └─ shared_capture_reports
   │   └─ project_captures ─ projects
   └─ projects
       ├─ project_captures ─ captures
@@ -153,8 +159,28 @@ create table captures (
   link_title text,
   link_description text,
   link_image_url text,
+  is_shared boolean not null default false,
+  shared_visibility text not null default 'visible'
+    check (shared_visibility in ('visible', 'limited')),
+  shared_limited_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table shared_capture_saves (
+  capture_id uuid not null references captures (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (capture_id, user_id)
+);
+
+create table shared_capture_reports (
+  id uuid primary key default gen_random_uuid(),
+  capture_id uuid not null references captures (id) on delete cascade,
+  reporter_id uuid not null references auth.users (id) on delete cascade,
+  reason text,
+  created_at timestamptz not null default now(),
+  unique (capture_id, reporter_id)
 );
 
 create table capture_assets (
@@ -215,6 +241,8 @@ create table documents (
 - 링크 글감의 사용자 메모는 `captures.content`, 외부 페이지 설명은 `link_description`에 저장한다. 미리보기는 생성 시 최초 한 번, 그리고 수정 요청의 `url`이 저장된 값과 다를 때만 다시 가져와 갱신한다(변경 없으면 재크롤링하지 않음).
 - 한 글감에는 여러 태그를 연결할 수 있다. `(user_id, name)`과 `(capture_id, tag_id)` 고유 제약으로 중복을 막으며, 글감 생성·수정 요청의 `tagIds`는 해당 글감의 태그 목록을 통째로 교체하는 방식으로 동작한다(부분 추가/삭제 아님).
 - 프로젝트 상태는 `active`, `done`만 사용한다. `archived`는 제거했고, 기존에 `archived`였던 로우는 마이그레이션에서 `done`으로 이관했다.
+- 글감은 생성·수정 시 `isShared`로 공유 여부를 설정한다. 공유 글감만 `/shared-captures`에 노출되며, 신고가 기준치 이상 누적되면 `shared_visibility='limited'`로 전환되어 서핑 목록에서 제외된다.
+- 다른 사용자가 공유 글감을 내 글감함에 추가하면 원본 생성자에게 알림이 생성된다. 공유 글감을 신고하거나 신고 누적으로 노출 제한이 걸린 경우에도 생성자에게 알림이 간다. 알림 테이블·실시간 전달은 백엔드 TODO다.
 - `documents.user_id`는 매 요청마다 `projects`를 조회해 소유권을 확인하던 이중 쿼리를 없애기 위해 비정규화한 컬럼이다(자동 저장처럼 자주 호출되는 경로의 지연을 줄이는 목적).
 - **알려진 한계:** 프론트는 원고 생성 시 `clientRequestId`를 함께 보내지만, 서버는 아직 이 값으로 중복 생성을 막지 않는다. 현재는 프론트가 요청 중 버튼을 비활성화하는 것으로만 완화되어 있고(같은 탭 연타는 막지만 네트워크 재시도·다중 탭까지는 못 막음), 서버 측 멱등 처리는 TODO로 남아 있다.
 - `profiles`, `captures`, `tags`, `projects`, `documents`는 직접 소유자 기준 RLS를 사용한다. 연결 테이블은 부모 글감 또는 프로젝트의 소유권을 검사한다. API 서버는 service-role 키로 RLS를 우회하므로, 실제 소유권 검증은 각 repository 함수가 쿼리에 `user_id`/`project_id` 필터를 직접 거는 방식으로 이루어진다.
@@ -235,6 +263,8 @@ interface ApiCapture {
   link_image_url: string | null;   // 외부 링크 미리보기 이미지
   image_url: string | null;         // 사진 글감이 Storage에 올린 파일의 서명된 URL (1시간 유효)
   tags: Array<{ id: string; name: string; color: string | null }>;
+  is_shared?: boolean;
+  shared_visibility?: 'visible' | 'limited';
   isLinked?: boolean;               // 아직 서버에서 채우지 않음 — 프론트가 별도로 계산
   created_at: string;
   updated_at: string;
@@ -252,10 +282,13 @@ interface ApiCapture {
 | DELETE | `/me` | 계정 삭제 | - | `204` | `auth.users` 삭제로 전 데이터 cascade + Storage 파일 정리 |
 | GET/PATCH | `/settings` | 알림·다크 에디터 설정 조회·저장 | `captureAlertsEnabled`, `darkEditorEnabled` | 설정 | `/me`와 별도 리소스로 분리 |
 | GET | `/captures` | 내 글감 목록 | `type` | `ApiCapture[]` | `q`/`tagIds`/`projectId`/`cursor`는 아직 미구현 — 프론트가 전체 목록을 받아 클라이언트에서 검색·필터링 |
-| POST | `/captures` | 글감과 태그 동시 생성 | `type`, `content`, `url`, `tagIds` | `ApiCapture` | 링크는 미리보기 자동 조회 |
+| POST | `/captures` | 글감과 태그 동시 생성 | `type`, `content`, `url`, `tagIds`, `isShared` | `ApiCapture` | 링크는 미리보기 자동 조회 |
 | GET | `/captures/:id` | 글감 상세 조회 | - | `ApiCapture` | |
-| PATCH | `/captures/:id` | 글감·태그 수정 | `content`, `url`, `tagIds` | `ApiCapture` | `url` 변경 시에만 미리보기 재조회 |
+| PATCH | `/captures/:id` | 글감·태그·공유 여부 수정 | `content`, `url`, `tagIds`, `isShared` | `ApiCapture` | `url` 변경 시에만 미리보기 재조회 |
 | DELETE | `/captures/:id` | 글감 삭제 | - | `204` | 자산·태그 연결 cascade |
+| GET | `/shared-captures` | 공유 글감 서핑 목록 | `q`, `cursor` | `ApiSharedCapture[]` | `is_shared=true`, `shared_visibility='visible'`만 노출 |
+| POST | `/shared-captures/:id/save` | 공유 글감을 내 글감함에 추가 | - | `ApiCapture` 또는 `204` | 원본 생성자에게 저장 알림 생성 |
+| POST | `/shared-captures/:id/report` | 공유 글감 신고 | `reason` | `204` | 중복 신고 방지, 누적 기준 초과 시 노출 제한 및 알림 |
 | POST | `/captures/:id/assets/upload-url` | 사진 업로드 URL 발급 | 파일명·MIME | signed URL | |
 | POST | `/captures/:id/assets/complete` | 업로드 완료 기록 | storage path | asset | |
 | GET/POST | `/tags` | 내 태그 목록·생성 | `name`, `color` | 태그 | |

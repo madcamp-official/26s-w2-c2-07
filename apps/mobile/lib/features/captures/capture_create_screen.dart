@@ -19,6 +19,7 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
   final linkController = TextEditingController();
   final tagController = TextEditingController();
   final tags = <String>['초안', '읽을거리'];
+  bool isShared = false;
 
   @override
   void initState() {
@@ -180,6 +181,17 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
                 icon: const Icon(Icons.add),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: SwitchListTile(
+              secondary: const Icon(Icons.explore_outlined),
+              title: const Text('글감 서핑에 공유'),
+              subtitle: const Text('다른 사용자가 검색하고 자신의 글감함에 담을 수 있어요.'),
+              value: isShared,
+              activeThumbColor: AppTheme.moss,
+              onChanged: (value) => setState(() => isShared = value),
+            ),
           ),
           const SizedBox(height: 16),
           FilledButton.icon(

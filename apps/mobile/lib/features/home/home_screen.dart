@@ -28,8 +28,6 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           _QuickCapturePanel(onStart: () => context.push('/capture')),
-          const SizedBox(height: 24),
-          const _CaptureShortcuts(),
           const SizedBox(height: 28),
           const _RecentCaptures(),
         ],
@@ -65,53 +63,6 @@ class _QuickCapturePanel extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _CaptureShortcuts extends StatelessWidget {
-  const _CaptureShortcuts();
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      (Icons.short_text, '조각글', '떠오른 문장부터', 'text'),
-      (Icons.photo_camera_outlined, '사진', '장면을 함께', 'photo'),
-      (Icons.videocam_outlined, '동영상', '순간을 생생히', 'video'),
-      (Icons.link, '링크', '읽을 거리 저장', 'link'),
-    ];
-
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 1.7,
-      children: [
-        for (final item in items)
-          InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () => context.push('/capture?type=${item.$4}'),
-            child: Ink(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppTheme.paper,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(item.$1, color: AppTheme.clay),
-                  const Spacer(),
-                  Text(item.$2, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  Text(item.$3, style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

@@ -917,3 +917,115 @@ button {
 .logout svg {
   width: 14px;
 }
+
+.surf-search {
+  max-width: 560px;
+  margin-bottom: 18px;
+}
+
+.surf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.surf-card {
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 260px;
+  color: inherit;
+}
+
+.surf-card:hover {
+  border-color: #c8c4b8;
+}
+
+.surf-card .capture-icon {
+  margin: 12px 0;
+}
+
+.surf-card h3 {
+  font: 700 16px var(--serif);
+  margin: 10px 0 8px;
+}
+
+.surf-card p {
+  color: #77756e;
+  font-size: 11px;
+  line-height: 1.6;
+  min-height: 34px;
+}
+
+.surf-card small,
+.surf-detail-modal small {
+  color: #99968f;
+  font-size: 10px;
+}
+
+.surf-detail-modal {
+  max-width: 560px;
+}
+
+.surf-detail-modal h2 {
+  font: 700 24px var(--serif);
+  margin: 14px 0 8px;
+}
+
+.surf-detail-modal p {
+  color: #6f6d66;
+  line-height: 1.7;
+}
+
+.tag-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.tag-row span {
+  background: #ecece5;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 10px;
+}
+
+.share-toggle {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 12px;
+}
+
+.share-toggle input {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.share-toggle b,
+.share-toggle small {
+  display: block;
+}
+
+.share-toggle small {
+  color: #8d8a82;
+  margin-top: 4px;
+}
+
+.modal-actions .ghost {
+  background: transparent;
+  color: #8b645e;
+  border: 1px solid var(--line);
+}
+
+.modal-actions .ghost svg {
+  width: 14px;
+}

@@ -4,6 +4,7 @@ import type {
   ApiProfile,
   ApiProject,
   ApiSettings,
+  ApiSharedCapture,
   ApiTag,
 } from "./api-types";
 
@@ -76,6 +77,77 @@ let captures: ApiCapture[] = [
     created_at: now,
     updated_at: now,
     tags: [tags[2]],
+  },
+];
+
+// TODO: 더미 데이터 삭제
+// 백엔드 공유 글감 API가 연결되면 /shared-captures 응답으로 대체해야 합니다.
+let sharedCaptures: ApiSharedCapture[] = [
+  {
+    id: "shared-window",
+    user_id: "shared-user-1",
+    type: "photo",
+    content: "창가에 놓인 노트와 빛이 좋은 오후",
+    url: null,
+    link_title: null,
+    link_description: null,
+    link_image_url: null,
+    image_url: null,
+    created_at: now,
+    updated_at: now,
+    tags: [{ id: "shared-tag-1", name: "일상", color: "#879287" }],
+    creator: {
+      id: "shared-user-1",
+      display_name: "문장 수집가",
+      avatar_url: null,
+    },
+    saved_count: 18,
+    report_count: 0,
+    visibility: "visible",
+  },
+  {
+    id: "shared-link",
+    user_id: "shared-user-2",
+    type: "link",
+    content: "꾸준히 쓰는 사람들의 루틴을 정리한 글",
+    url: "https://example.com/routine",
+    link_title: "작게 쓰고 오래 남기는 법",
+    link_description: "거창한 계획보다 매일의 작은 리듬에 관한 글입니다.",
+    link_image_url: null,
+    image_url: null,
+    created_at: now,
+    updated_at: now,
+    tags: [{ id: "shared-tag-2", name: "글쓰기", color: "#b28f6b" }],
+    creator: {
+      id: "shared-user-2",
+      display_name: "느린 작가",
+      avatar_url: null,
+    },
+    saved_count: 42,
+    report_count: 1,
+    visibility: "visible",
+  },
+  {
+    id: "shared-video",
+    user_id: "shared-user-3",
+    type: "video",
+    content: "비 오는 거리의 짧은 움직임",
+    url: null,
+    link_title: null,
+    link_description: null,
+    link_image_url: null,
+    image_url: null,
+    created_at: now,
+    updated_at: now,
+    tags: [{ id: "shared-tag-3", name: "장면", color: "#8898a4" }],
+    creator: {
+      id: "shared-user-3",
+      display_name: "장면 기록자",
+      avatar_url: null,
+    },
+    saved_count: 7,
+    report_count: 0,
+    visibility: "visible",
   },
 ];
 
@@ -195,6 +267,8 @@ export function mockApiResponse<T>(path: string, options: RequestInit = {}): T {
             ? "백엔드 연결 전 표시되는 링크 정보입니다."
             : null,
         link_image_url: null,
+        is_shared: body.isShared ?? false,
+        shared_visibility: "visible",
         created_at: now,
         updated_at: now,
         tags: tags.filter((tag) => body.tagIds?.includes(tag.id)),
@@ -209,6 +283,51 @@ export function mockApiResponse<T>(path: string, options: RequestInit = {}): T {
       ...capture,
       isLinked: projectId ? linkedCaptureIds.has(capture.id) : undefined,
     })) as T;
+  }
+  if (route === "/shared-captures") {
+    const query = new URLSearchParams(path.split("?")[1] ?? "").get("q") ?? "";
+    return sharedCaptures.filter((capture) => {
+      const haystack = [
+        capture.content,
+        capture.link_title,
+        capture.link_description,
+        capture.creator.display_name,
+        ...capture.tags.map((tag) => tag.name),
+      ]
+        .filter(Boolean)
+        .join(" ");
+      return haystack.includes(query);
+    }) as T;
+  }
+  const sharedSaveMatch = route.match(/^\/shared-captures\/([^/]+)\/save$/);
+  if (sharedSaveMatch && method === "POST") {
+    const capture = sharedCaptures.find(
+      (item) => item.id === sharedSaveMatch[1],
+    );
+    if (capture) {
+      capture.saved_count += 1;
+      captures = [
+        {
+          ...capture,
+          id: id("capture"),
+          user_id: userId,
+          tags: capture.tags,
+        },
+        ...captures,
+      ];
+    }
+    return { ok: true } as T;
+  }
+  const sharedReportMatch = route.match(/^\/shared-captures\/([^/]+)\/report$/);
+  if (sharedReportMatch && method === "POST") {
+    const capture = sharedCaptures.find(
+      (item) => item.id === sharedReportMatch[1],
+    );
+    if (capture) {
+      capture.report_count += 1;
+      if (capture.report_count >= 3) capture.visibility = "limited";
+    }
+    return { ok: true } as T;
   }
   const captureMatch = route.match(/^\/captures\/([^/]+)$/);
   if (captureMatch) {

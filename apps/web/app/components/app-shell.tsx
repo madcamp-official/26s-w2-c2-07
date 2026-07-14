@@ -3,6 +3,7 @@
 import {
   Bell,
   BookOpen,
+  Compass,
   FolderKanban,
   Home,
   LogOut,
@@ -24,6 +25,7 @@ const navigation = [
   { href: "/", icon: Home, label: "홈" },
   { href: "/captures", icon: BookOpen, label: "글감함" },
   { href: "/projects", icon: FolderKanban, label: "프로젝트" },
+  { href: "/surf", icon: Compass, label: "글감 서핑" },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
