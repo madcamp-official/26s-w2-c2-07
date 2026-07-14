@@ -1,15 +1,21 @@
-import { supabase } from "./supabase-client";
+import {
+  flushDesktopOfflineQueue,
+  getDesktopBackendUrl,
+  queueDesktopOfflineMutation,
+} from "./desktop-bridge";
 import {
   isMockModeActive,
   mockApiResponse,
   mockDownload,
   notifyMockMode,
 } from "./mock-api";
+import { supabase } from "./supabase-client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 class ApiError extends Error {
   status: number;
+
   constructor(status: number, message: string) {
     super(message);
     this.status = status;
@@ -20,37 +26,47 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
+  const apiUrl = (await getDesktopBackendUrl()) ?? API_URL;
+  const authorizationHeader = session
+    ? `Bearer ${session.access_token}`
+    : undefined;
 
-  let res: Response;
+  let response: Response;
+
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${apiUrl}${path}`, {
       ...options,
       headers: {
         "Content-Type": "application/json",
-        ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        ...(authorizationHeader ? { Authorization: authorizationHeader } : {}),
         ...options.headers,
       },
     });
   } catch {
     // TODO: 더미 데이터 삭제
+    await queueDesktopOfflineMutation(path, options);
     notifyMockMode();
     return mockApiResponse<T>(path, options);
   }
 
-  const text = await res.text();
+  const text = await response.text();
   const data = text ? JSON.parse(text) : undefined;
 
-  if (!res.ok) {
-    if ([404, 501, 503].includes(res.status)) {
+  if (!response.ok) {
+    if ([404, 501, 503].includes(response.status)) {
       // TODO: 더미 데이터 삭제
+      await queueDesktopOfflineMutation(path, options);
       notifyMockMode();
       return mockApiResponse<T>(path, options);
     }
+
     throw new ApiError(
-      res.status,
-      data?.error?.message ?? `API error ${res.status}`,
+      response.status,
+      data?.error?.message ?? `API error ${response.status}`,
     );
   }
+
+  void flushDesktopOfflineQueue(apiUrl, authorizationHeader);
 
   return data as T;
 }
@@ -59,10 +75,12 @@ async function download(path: string): Promise<Blob> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
+  const apiUrl = (await getDesktopBackendUrl()) ?? API_URL;
 
   let response: Response;
+
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${apiUrl}${path}`, {
       headers: session
         ? { Authorization: `Bearer ${session.access_token}` }
         : {},
@@ -79,6 +97,7 @@ async function download(path: string): Promise<Blob> {
       notifyMockMode();
       return mockDownload(path);
     }
+
     const data = await response.json().catch(() => undefined);
     throw new ApiError(
       response.status,
