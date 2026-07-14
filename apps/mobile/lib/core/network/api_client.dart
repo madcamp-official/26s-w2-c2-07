@@ -11,14 +11,30 @@ class ApiClient {
 
   final http.Client _client;
 
-  // .env's API_URL targets the Android emulator's host alias (10.0.2.2).
-  // On desktop platforms that alias doesn't resolve, so point at the
-  // machine's own loopback instead.
   String get _baseUrl {
-    final url = dotenv.env['API_URL']!;
+    final rawUrl = dotenv.env['API_URL'] ??
+        dotenv.env['NOOK_BACKEND_URL'] ??
+        dotenv.env['NEXT_PUBLIC_API_URL'];
+
+    if (rawUrl == null || rawUrl.trim().isEmpty) {
+      throw const ApiException(
+        0,
+        'API_URL 또는 NOOK_BACKEND_URL이 .env에 설정되어 있지 않습니다.',
+      );
+    }
+
+    final url = rawUrl.trim().replaceAll(RegExp(r'/$'), '');
+
+    if (!kIsWeb && Platform.isAndroid) {
+      return url
+          .replaceFirst('localhost', '10.0.2.2')
+          .replaceFirst('127.0.0.1', '10.0.2.2');
+    }
+
     if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
       return url.replaceFirst('10.0.2.2', '127.0.0.1');
     }
+
     return url;
   }
 

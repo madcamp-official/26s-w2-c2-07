@@ -38,7 +38,6 @@ class Capture {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  /// Short, human-friendly heading since the backend has no dedicated title field.
   String get displayTitle {
     switch (type) {
       case CaptureType.link:
@@ -54,13 +53,20 @@ class Capture {
         final text = content?.trim() ?? '';
         if (text.isEmpty) return '(내용 없음)';
         final firstLine = text.split('\n').first;
-        return firstLine.length > 40
-            ? '${firstLine.substring(0, 40)}…'
-            : firstLine;
+        return firstLine.length > 40 ? '${firstLine.substring(0, 40)}…' : firstLine;
     }
   }
 
   factory Capture.fromJson(Map<String, dynamic> json) {
+    final firstAsset = (json['assets'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .firstOrNull;
+    final resolvedImageUrl = json['image_url'] as String? ??
+        json['thumbnail_url'] as String? ??
+        json['asset_url'] as String? ??
+        firstAsset?['signed_url'] as String? ??
+        firstAsset?['url'] as String?;
+
     return Capture(
       id: json['id'] as String,
       type: captureTypeFromString(json['type'] as String),
@@ -69,7 +75,7 @@ class Capture {
       linkTitle: json['link_title'] as String?,
       linkDescription: json['link_description'] as String?,
       linkImageUrl: json['link_image_url'] as String?,
-      imageUrl: json['image_url'] as String?,
+      imageUrl: resolvedImageUrl,
       isShared: json['is_shared'] as bool? ?? false,
       tags: (json['tags'] as List<dynamic>? ?? [])
           .map((tag) => Tag.fromJson(tag as Map<String, dynamic>))
