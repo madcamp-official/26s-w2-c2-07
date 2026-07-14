@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import type { ApiProfile } from "../api-types";
 import { notifications } from "../data";
+import { readCachedProfile, writeCachedProfile } from "../profile-cache";
 import { supabase } from "../supabase-client";
 
 const navigation = [
@@ -59,26 +60,68 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    setProfile(readCachedProfile());
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+
+      if (!session) {
+        router.replace("/login");
+        setProfile(null);
+        writeCachedProfile(null);
+        setEmail(undefined);
+        setAuthChecked(true);
+        return;
+      }
+
+      setEmail(session.user.email);
+      setProfile((current) => current ?? readCachedProfile());
+      setAuthChecked(true);
+      api
+        .get<ApiProfile>("/me")
+        .then((result) => {
+          if (!mounted) return;
+          setProfile(result);
+          writeCachedProfile(result);
+        })
+        .catch(() => undefined);
+    });
+
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        if (!mounted) return;
+
         if (!session) {
           router.replace("/login");
           setProfile(null);
+          writeCachedProfile(null);
           setEmail(undefined);
         } else {
           setEmail(session.user.email);
+          setProfile((current) => current ?? readCachedProfile());
           api
             .get<ApiProfile>("/me")
-            .then(setProfile)
-            .catch(() => setProfile(null));
+            .then((result) => {
+              setProfile(result);
+              writeCachedProfile(result);
+            })
+            .catch(() => undefined);
         }
         setAuthChecked(true);
       },
     );
-    return () => subscription.subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.subscription.unsubscribe();
+    };
   }, [router]);
 
   const signOut = async () => {
+    writeCachedProfile(null);
     await supabase.auth.signOut();
     router.push("/login");
   };
@@ -89,6 +132,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       alert("API 연결이 필요합니다");
       return;
     }
+    writeCachedProfile(null);
     await supabase.auth.signOut();
     router.push("/login");
   };
