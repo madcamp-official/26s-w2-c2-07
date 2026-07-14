@@ -21,7 +21,9 @@ final appRouter = GoRouter(
   initialLocation: '/login',
   refreshListenable: _authRefreshListenable,
   redirect: (context, state) {
-    final isLoggedIn = Supabase.instance.client.auth.currentSession != null;
+    final accessToken =
+        Supabase.instance.client.auth.currentSession?.accessToken;
+    final isLoggedIn = accessToken != null && accessToken.isNotEmpty;
     final isLoggingIn = state.matchedLocation == '/login';
 
     if (!isLoggedIn) return isLoggingIn ? null : '/login';

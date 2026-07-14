@@ -50,10 +50,10 @@ class ApiClient {
 
   /// For endpoints that return a binary body (e.g. project export) instead of JSON.
   Future<http.Response> getRaw(String path) async {
-    final token = Supabase.instance.client.auth.currentSession?.accessToken;
+    final token = await _requireAccessToken();
     final request = http.Request('GET', Uri.parse('$_baseUrl$path'))
       ..headers.addAll({
-        if (token != null) 'Authorization': 'Bearer $token',
+        'Authorization': 'Bearer $token',
       });
 
     final response = await http.Response.fromStream(await _client.send(request));
@@ -64,11 +64,11 @@ class ApiClient {
   }
 
   Future<dynamic> _request(String method, String path, {Object? body}) async {
-    final token = Supabase.instance.client.auth.currentSession?.accessToken;
+    final token = await _requireAccessToken();
     final request = http.Request(method, Uri.parse('$_baseUrl$path'))
       ..headers.addAll({
         'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
+        'Authorization': 'Bearer $token',
       });
     if (body != null) request.body = jsonEncode(body);
 
@@ -101,6 +101,30 @@ class ApiClient {
     }
     return payload is String && payload.isNotEmpty ? payload : null;
   }
+
+  Future<String> _requireAccessToken() async {
+    final auth = Supabase.instance.client.auth;
+    final currentToken = auth.currentSession?.accessToken;
+
+    if (currentToken != null && currentToken.isNotEmpty) {
+      return currentToken;
+    }
+
+    try {
+      final refreshed = await auth.refreshSession();
+      final refreshedToken =
+          refreshed.session?.accessToken ?? auth.currentSession?.accessToken;
+
+      if (refreshedToken != null && refreshedToken.isNotEmpty) {
+        return refreshedToken;
+      }
+    } catch (_) {
+      // The app will surface the auth error below and route the user back to login.
+    }
+
+    await auth.signOut();
+    throw const AuthRequiredException();
+  }
 }
 
 class ApiException implements Exception {
@@ -111,4 +135,9 @@ class ApiException implements Exception {
 
   @override
   String toString() => message ?? 'API error $statusCode';
+}
+
+class AuthRequiredException extends ApiException {
+  const AuthRequiredException()
+      : super(401, '로그인이 만료되었습니다. 다시 로그인해 주세요.');
 }
