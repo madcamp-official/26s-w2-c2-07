@@ -1,8 +1,74 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'dart:io';
 
-class LoginScreen extends StatelessWidget {
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  bool isSigningIn = false;
+
+  // Fixed port so it can be registered as a Supabase redirect URL.
+  static const _desktopCallbackPort = 8977;
+
+  bool get _isDesktop =>
+      !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+
+  Future<void> signInWithGoogle() async {
+    setState(() => isSigningIn = true);
+    try {
+      if (_isDesktop) {
+        await _signInWithGoogleDesktop();
+      } else {
+        await Supabase.instance.client.auth.signInWithOAuth(
+          OAuthProvider.google,
+          redirectTo: 'io.supabase.nook://login-callback/',
+          authScreenLaunchMode: LaunchMode.externalApplication,
+        );
+      }
+      // go_router's redirect (driven by onAuthStateChange) takes over from here.
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('로그인에 실패했습니다: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => isSigningIn = false);
+    }
+  }
+
+  Future<void> _signInWithGoogleDesktop() async {
+    final server = await HttpServer.bind(
+      InternetAddress.loopbackIPv4,
+      _desktopCallbackPort,
+    );
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'http://127.0.0.1:$_desktopCallbackPort/callback',
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+
+      final request = await server.first.timeout(const Duration(minutes: 3));
+      final callbackUri = request.requestedUri;
+
+      request.response
+        ..statusCode = 200
+        ..headers.contentType = ContentType.html
+        ..write('<html><body>로그인이 완료되었습니다. 이 창을 닫아주세요.</body></html>');
+      await request.response.close();
+
+      await Supabase.instance.client.auth.getSessionFromUrl(callbackUri);
+    } finally {
+      await server.close(force: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,8 +86,14 @@ class LoginScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 36),
               FilledButton(
-                onPressed: () => context.go('/'),
-                child: const Text('Google로 계속하기'),
+                onPressed: isSigningIn ? null : signInWithGoogle,
+                child: isSigningIn
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Google로 계속하기'),
               ),
             ],
           ),

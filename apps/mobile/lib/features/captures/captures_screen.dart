@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/capture_type_ui.dart';
+import '../../core/utils/date_format.dart';
+import '../../data/models/capture.dart';
+import '../../data/models/tag.dart';
+import '../../data/repositories/captures_repository.dart';
+import '../../data/repositories/tags_repository.dart';
 import '../../shared/main_shell.dart';
 
 class CapturesScreen extends StatefulWidget {
@@ -12,31 +18,63 @@ class CapturesScreen extends StatefulWidget {
 }
 
 class _CapturesScreenState extends State<CapturesScreen> {
+  final _capturesRepository = CapturesRepository();
+  final _tagsRepository = TagsRepository();
+
   bool isCardView = false;
   String query = '';
-  final tags = <String>['초안', '읽을거리', '문장', '사진'];
-  final captures = <_CaptureItem>[
-    _CaptureItem(
-        'c1', '조각글', '따뜻한 문장은 오래 머문다.', '문장', '오늘 13:04', '문장으로 시작된 글감입니다.'),
-    _CaptureItem('c2', '사진', '창가에 놓인 노트와 커피', '사진', '어제', '차분한 분위기의 사진 글감입니다.'),
-    _CaptureItem(
-        'c3', '링크', '퇴근길에 읽은 에세이', '읽을거리', '7월 12일', '나중에 프로젝트에 연결할 링크 글감입니다.'),
-  ];
+  String? selectedTag;
 
-  List<_CaptureItem> get filteredCaptures {
-    final text = query.trim();
-    if (text.isEmpty) return captures;
-    return captures
-        .where((capture) =>
-            capture.title.contains(text) ||
-            capture.type.contains(text) ||
-            capture.tag.contains(text))
-        .toList();
+  bool _loading = true;
+  Object? _error;
+  List<Capture> captures = [];
+  List<Tag> tags = [];
+
+  @override
+  void initState() {
+    super.initState();
+    load();
   }
 
-  void addTag() {
+  Future<void> load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final results = await Future.wait([
+        _capturesRepository.list(),
+        _tagsRepository.list(),
+      ]);
+      setState(() {
+        captures = results[0] as List<Capture>;
+        tags = results[1] as List<Tag>;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e;
+        _loading = false;
+      });
+    }
+  }
+
+  List<Capture> get filteredCaptures {
+    final text = query.trim();
+    return captures.where((capture) {
+      final matchesQuery = text.isEmpty ||
+          capture.displayTitle.contains(text) ||
+          captureTypeLabel(capture.type).contains(text) ||
+          capture.tags.any((tag) => tag.name.contains(text));
+      final matchesTag =
+          selectedTag == null || capture.tags.any((tag) => tag.name == selectedTag);
+      return matchesQuery && matchesTag;
+    }).toList();
+  }
+
+  Future<void> addTag() async {
     final controller = TextEditingController();
-    showDialog<void>(
+    final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('태그 추가'),
@@ -51,31 +89,54 @@ class _CapturesScreenState extends State<CapturesScreen> {
             child: const Text('취소'),
           ),
           FilledButton(
-            onPressed: () {
-              final value = controller.text.trim();
-              if (value.isNotEmpty && !tags.contains(value)) {
-                setState(() => tags.add(value));
-              }
-              Navigator.of(context).pop();
-            },
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
             child: const Text('추가'),
           ),
         ],
       ),
     );
+    if (name == null || name.isEmpty) return;
+    if (tags.any((tag) => tag.name == name)) return;
+    try {
+      final tag = await _tagsRepository.create(name);
+      if (!mounted) return;
+      setState(() => tags = [...tags, tag]);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('태그를 추가하지 못했습니다: $e')));
+    }
   }
 
-  Future<void> deleteCapture(_CaptureItem capture) async {
+  Future<void> deleteCapture(Capture capture) async {
     final confirmed = await showConfirmDialog(
       context,
       title: '글감을 삭제할까요?',
-      message: '${capture.title} 글감은 목록에서 사라집니다.',
+      message: '${capture.displayTitle} 글감은 목록에서 사라집니다.',
     );
     if (!confirmed || !mounted) return;
-    setState(() => captures.remove(capture));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${capture.title} 글감을 삭제했습니다.')),
-    );
+    try {
+      await _capturesRepository.delete(capture.id);
+      if (!mounted) return;
+      setState(() => captures = captures.where((c) => c.id != capture.id).toList());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${capture.displayTitle} 글감을 삭제했습니다.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('삭제하지 못했습니다: $e')));
+    }
+  }
+
+  Future<void> openCreate() async {
+    final changed = await context.push<bool>('/capture');
+    if (changed == true) load();
+  }
+
+  Future<void> openDetail(Capture capture) async {
+    final changed = await context.push<bool>('/captures/${capture.id}');
+    if (changed == true) load();
   }
 
   @override
@@ -87,69 +148,91 @@ class _CapturesScreenState extends State<CapturesScreen> {
         title: const Text('글감함'),
         actions: const [ProfileAction()],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  onChanged: (value) => setState(() => query = value),
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search),
-                    hintText: '제목, 태그, 형태 검색',
+      body: RefreshIndicator(
+        onRefresh: load,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    onChanged: (value) => setState(() => query = value),
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search),
+                      hintText: '제목, 태그, 형태 검색',
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              _ViewModeSwitch(
-                isCardView: isCardView,
-                onChanged: (value) => setState(() => isCardView = value),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final tag in tags)
-                InputChip(
-                  label: Text('#$tag'),
-                  backgroundColor: AppTheme.mist,
-                  onDeleted: () => setState(() => tags.remove(tag)),
+                const SizedBox(width: 10),
+                _ViewModeSwitch(
+                  isCardView: isCardView,
+                  onChanged: (value) => setState(() => isCardView = value),
                 ),
-              ActionChip(
-                avatar: const Icon(Icons.add, size: 18),
-                label: const Text('태그'),
-                onPressed: addTag,
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: () => context.push('/capture'),
-            icon: const Icon(Icons.add),
-            label: const Text('글감 추가'),
-          ),
-          const SizedBox(height: 18),
-          if (items.isEmpty)
-            const _EmptyCaptures()
-          else if (isCardView)
-            _CaptureCardGrid(items: items, onDelete: deleteCapture)
-          else
-            _CaptureList(items: items, onDelete: deleteCapture),
-        ],
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final tag in tags)
+                  FilterChip(
+                    label: Text('#${tag.name}'),
+                    selected: selectedTag == tag.name,
+                    backgroundColor: AppTheme.mist,
+                    onSelected: (selected) =>
+                        setState(() => selectedTag = selected ? tag.name : null),
+                  ),
+                ActionChip(
+                  avatar: const Icon(Icons.add, size: 18),
+                  label: const Text('태그'),
+                  onPressed: addTag,
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: openCreate,
+              icon: const Icon(Icons.add),
+              label: const Text('글감 추가'),
+            ),
+            const SizedBox(height: 18),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 48),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 48),
+                child: Column(
+                  children: [
+                    Text('글감을 불러오지 못했습니다.\n$_error', textAlign: TextAlign.center),
+                    const SizedBox(height: 8),
+                    OutlinedButton(onPressed: load, child: const Text('다시 시도')),
+                  ],
+                ),
+              )
+            else if (items.isEmpty)
+              const _EmptyCaptures()
+            else if (isCardView)
+              _CaptureCardGrid(items: items, onDelete: deleteCapture, onOpen: openDetail)
+            else
+              _CaptureList(items: items, onDelete: deleteCapture, onOpen: openDetail),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _CaptureList extends StatelessWidget {
-  const _CaptureList({required this.items, required this.onDelete});
+  const _CaptureList({required this.items, required this.onDelete, required this.onOpen});
 
-  final List<_CaptureItem> items;
-  final ValueChanged<_CaptureItem> onDelete;
+  final List<Capture> items;
+  final ValueChanged<Capture> onDelete;
+  final ValueChanged<Capture> onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -160,10 +243,12 @@ class _CaptureList extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 10),
             child: Card(
               child: ListTile(
-                onTap: () => context.push('/captures/${item.id}'),
+                onTap: () => onOpen(item),
                 leading: _CaptureBadge(type: item.type),
-                title: Text(item.title),
-                subtitle: Text('#${item.tag} · ${item.date}'),
+                title: Text(item.displayTitle),
+                subtitle: Text(
+                  '${item.tags.isNotEmpty ? '#${item.tags.first.name} · ' : ''}${formatRelativeDate(item.createdAt)}',
+                ),
                 trailing: IconButton(
                   tooltip: '삭제',
                   onPressed: () => onDelete(item),
@@ -178,10 +263,11 @@ class _CaptureList extends StatelessWidget {
 }
 
 class _CaptureCardGrid extends StatelessWidget {
-  const _CaptureCardGrid({required this.items, required this.onDelete});
+  const _CaptureCardGrid({required this.items, required this.onDelete, required this.onOpen});
 
-  final List<_CaptureItem> items;
-  final ValueChanged<_CaptureItem> onDelete;
+  final List<Capture> items;
+  final ValueChanged<Capture> onDelete;
+  final ValueChanged<Capture> onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +285,7 @@ class _CaptureCardGrid extends StatelessWidget {
         final item = items[index];
         return InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: () => context.push('/captures/${item.id}'),
+          onTap: () => onOpen(item),
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -219,23 +305,23 @@ class _CaptureCardGrid extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  _CaptureThumbnail(type: item.type),
+                  _CaptureThumbnail(item: item),
                   const SizedBox(height: 8),
                   Text(
-                    item.title,
+                    item.displayTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    item.description,
+                    item.content ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '#${item.tag} · ${item.date}',
+                    '${item.tags.isNotEmpty ? '#${item.tags.first.name} · ' : ''}${formatRelativeDate(item.createdAt)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -306,15 +392,31 @@ class _ViewModeSwitch extends StatelessWidget {
 }
 
 class _CaptureThumbnail extends StatelessWidget {
-  const _CaptureThumbnail({required this.type});
+  const _CaptureThumbnail({required this.item});
 
-  final String type;
+  final Capture item;
 
   @override
   Widget build(BuildContext context) {
-    if (type == '조각글') return const SizedBox.shrink();
+    if (item.type == CaptureType.text) return const SizedBox.shrink();
 
-    final icon = type == '사진' ? Icons.image_outlined : Icons.link;
+    final imageUrl = item.imageUrl ?? item.linkImageUrl;
+    if (imageUrl != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          imageUrl,
+          height: 52,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _placeholder(item.type),
+        ),
+      );
+    }
+    return _placeholder(item.type);
+  }
+
+  Widget _placeholder(CaptureType type) {
     return Container(
       height: 52,
       width: double.infinity,
@@ -322,7 +424,7 @@ class _CaptureThumbnail extends StatelessWidget {
         color: AppTheme.mist,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Icon(icon, color: AppTheme.moss),
+      child: Icon(captureTypeIcon(type), color: AppTheme.moss),
     );
   }
 }
@@ -330,20 +432,14 @@ class _CaptureThumbnail extends StatelessWidget {
 class _CaptureBadge extends StatelessWidget {
   const _CaptureBadge({required this.type});
 
-  final String type;
+  final CaptureType type;
 
   @override
   Widget build(BuildContext context) {
-    final icon = switch (type) {
-      '사진' => Icons.photo_camera_outlined,
-      '링크' => Icons.link,
-      _ => Icons.short_text,
-    };
-
     return CircleAvatar(
       backgroundColor: AppTheme.mist,
       foregroundColor: AppTheme.moss,
-      child: Icon(icon),
+      child: Icon(captureTypeIcon(type)),
     );
   }
 }
@@ -358,24 +454,6 @@ class _EmptyCaptures extends StatelessWidget {
       child: Center(child: Text('검색 결과가 없습니다.')),
     );
   }
-}
-
-class _CaptureItem {
-  _CaptureItem(
-    this.id,
-    this.type,
-    this.title,
-    this.tag,
-    this.date,
-    this.description,
-  );
-
-  final String id;
-  final String type;
-  final String title;
-  final String tag;
-  final String date;
-  final String description;
 }
 
 Future<bool> showConfirmDialog(
