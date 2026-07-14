@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/models/capture.dart';
+import '../../data/models/tag.dart';
+import '../../data/repositories/captures_repository.dart';
+import '../../data/repositories/storage_repository.dart';
+import '../../data/repositories/tags_repository.dart';
 import '../../shared/main_shell.dart';
 
 class CaptureCreateScreen extends StatefulWidget {
@@ -13,13 +19,21 @@ class CaptureCreateScreen extends StatefulWidget {
 }
 
 class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
+  final _capturesRepository = CapturesRepository();
+  final _tagsRepository = TagsRepository();
+  final _storageRepository = StorageRepository();
+  final _imagePicker = ImagePicker();
+
   late String type;
-  final titleController = TextEditingController();
-  final memoController = TextEditingController();
+  final contentController = TextEditingController();
   final linkController = TextEditingController();
   final tagController = TextEditingController();
-  final tags = <String>['초안', '읽을거리'];
+  final tags = <String>[];
   bool isShared = false;
+
+  List<Tag> existingTags = [];
+  XFile? pickedFile;
+  bool isSaving = false;
 
   @override
   void initState() {
@@ -30,12 +44,14 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
       'link' => 'link',
       _ => 'text',
     };
+    _tagsRepository.list().then((value) {
+      if (mounted) setState(() => existingTags = value);
+    }).catchError((_) {});
   }
 
   @override
   void dispose() {
-    titleController.dispose();
-    memoController.dispose();
+    contentController.dispose();
     linkController.dispose();
     tagController.dispose();
     super.dispose();
@@ -50,11 +66,91 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
     });
   }
 
-  void saveCapture() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('글감이 임시로 저장되었습니다. API 연결 후 서버에 저장됩니다.')),
-    );
-    Navigator.of(context).pop();
+  Future<void> pickMedia() async {
+    final file = type == 'video'
+        ? await _imagePicker.pickVideo(source: ImageSource.gallery)
+        : await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (file != null) setState(() => pickedFile = file);
+  }
+
+  String _contentTypeFor(String fileName) {
+    final ext = fileName.toLowerCase().split('.').last;
+    return switch (ext) {
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'png' => 'image/png',
+      'heic' => 'image/heic',
+      'webp' => 'image/webp',
+      'mp4' => 'video/mp4',
+      'mov' => 'video/quicktime',
+      _ => 'application/octet-stream',
+    };
+  }
+
+  Future<List<String>> _resolveTagIds() async {
+    final ids = <String>[];
+    for (final name in tags) {
+      Tag? existing;
+      for (final tag in existingTags) {
+        if (tag.name == name) {
+          existing = tag;
+          break;
+        }
+      }
+      if (existing != null) {
+        ids.add(existing.id);
+        continue;
+      }
+      final created = await _tagsRepository.create(name);
+      existingTags = [...existingTags, created];
+      ids.add(created.id);
+    }
+    return ids;
+  }
+
+  Future<void> saveCapture() async {
+    final content = contentController.text.trim();
+    final url = linkController.text.trim();
+
+    if (type == 'text' && content.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('내용을 입력해주세요.')));
+      return;
+    }
+    if (type == 'link' && url.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('링크 주소를 입력해주세요.')));
+      return;
+    }
+
+    setState(() => isSaving = true);
+    try {
+      final tagIds = await _resolveTagIds();
+      final capture = await _capturesRepository.create(
+        type: captureTypeFromString(type),
+        content: content.isEmpty ? null : content,
+        url: type == 'link' ? url : null,
+        tagIds: tagIds,
+      );
+
+      if ((type == 'photo' || type == 'video') && pickedFile != null) {
+        final bytes = await pickedFile!.readAsBytes();
+        await _storageRepository.uploadCaptureAsset(
+          captureId: capture.id,
+          fileName: pickedFile!.name,
+          contentType: _contentTypeFor(pickedFile!.name),
+          bytes: bytes,
+        );
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('저장하지 못했습니다: $e')));
+    } finally {
+      if (mounted) setState(() => isSaving = false);
+    }
   }
 
   @override
@@ -90,18 +186,13 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
                   value: 'link', icon: Icon(Icons.link), label: Text('링크')),
             ],
             selected: {type},
-            onSelectionChanged: (value) => setState(() => type = value.first),
+            onSelectionChanged: (value) =>
+                setState(() {
+                  type = value.first;
+                  pickedFile = null;
+                }),
           ),
           const SizedBox(height: 20),
-          TextField(
-            controller: titleController,
-            textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: '제목',
-              hintText: '나중에 다시 찾기 쉬운 이름',
-            ),
-          ),
-          const SizedBox(height: 12),
           if (type == 'link')
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -114,38 +205,25 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
                 ),
               ),
             ),
-          if (type == 'photo')
+          if (type == 'photo' || type == 'video')
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: OutlinedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('사진 선택은 권한 연결 후 활성화됩니다.')),
-                  );
-                },
-                icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('사진 선택'),
-              ),
-            ),
-          if (type == 'video')
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('동영상 선택은 권한 연결 후 활성화됩니다.')),
-                  );
-                },
-                icon: const Icon(Icons.video_library_outlined),
-                label: const Text('동영상 선택'),
+                onPressed: pickMedia,
+                icon: Icon(type == 'photo'
+                    ? Icons.photo_library_outlined
+                    : Icons.video_library_outlined),
+                label: Text(pickedFile == null
+                    ? (type == 'photo' ? '사진 선택' : '동영상 선택')
+                    : pickedFile!.name),
               ),
             ),
           TextField(
-            controller: memoController,
-            minLines: 7,
-            maxLines: 14,
-            decoration: const InputDecoration(
-              labelText: '메모',
+            controller: contentController,
+            minLines: type == 'text' ? 8 : 4,
+            maxLines: type == 'text' ? 16 : 8,
+            decoration: InputDecoration(
+              labelText: type == 'link' ? '메모' : '내용',
               hintText: '떠오른 문장, 장면, 감정을 그대로 적어보세요.',
             ),
           ),
@@ -195,8 +273,14 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: saveCapture,
-            icon: const Icon(Icons.check),
+            onPressed: isSaving ? null : saveCapture,
+            icon: isSaving
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check),
             label: const Text('글감 저장'),
           ),
         ],

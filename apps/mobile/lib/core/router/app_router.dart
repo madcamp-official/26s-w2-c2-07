@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/login_screen.dart';
 import '../../features/captures/capture_create_screen.dart';
@@ -16,6 +19,15 @@ import '../../shared/main_shell.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/login',
+  refreshListenable: _authRefreshListenable,
+  redirect: (context, state) {
+    final isLoggedIn = Supabase.instance.client.auth.currentSession != null;
+    final isLoggingIn = state.matchedLocation == '/login';
+
+    if (!isLoggedIn) return isLoggingIn ? null : '/login';
+    if (isLoggingIn) return '/';
+    return null;
+  },
   routes: [
     GoRoute(
       path: '/login',
@@ -109,6 +121,25 @@ final appRouter = GoRouter(
     ),
   ],
 );
+
+final _authRefreshListenable =
+    _GoRouterRefreshStream(Supabase.instance.client.auth.onAuthStateChange);
+
+/// Turns the auth state stream into a Listenable so go_router re-evaluates
+/// its `redirect` callback whenever the user signs in or out.
+class _GoRouterRefreshStream extends ChangeNotifier {
+  _GoRouterRefreshStream(Stream<AuthState> stream) {
+    _subscription = stream.listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<AuthState> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
 
 CustomTransitionPage<void> _fadePage(Widget child) {
   return CustomTransitionPage<void>(
