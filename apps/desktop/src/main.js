@@ -13,7 +13,7 @@ const iconPath = path.join(
   "assets",
   process.platform === "win32" ? "icon.ico" : "icon.png"
 );
-const env = readEnvFile(path.join(desktopRoot, ".env"));
+const env = readDesktopEnv();
 const configuredWebAppUrl = process.env.NOOK_WEB_APP_URL || env.NOOK_WEB_APP_URL;
 const backendUrl = process.env.NOOK_BACKEND_URL || env.NOOK_BACKEND_URL || "";
 
@@ -39,6 +39,13 @@ function readEnvFile(filePath) {
       values[key] = rawValue.replace(/^["']|["']$/g, "");
       return values;
     }, {});
+}
+
+function readDesktopEnv() {
+  return {
+    ...readEnvFile(path.join(desktopRoot, ".env")),
+    ...readEnvFile(path.join(desktopRoot, ".env.local"))
+  };
 }
 
 function offlineQueuePath() {
