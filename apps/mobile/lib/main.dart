@@ -4,6 +4,7 @@ import 'package:fvp/fvp.dart' as fvp;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
+import 'core/auth/auth_ready.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +12,7 @@ Future<void> main() async {
   fvp.registerWith(options: {'platforms': ['windows']});
   await _loadEnvironment();
   await _initializeSupabase();
+  await authReady.initialize();
   runApp(const NookApp());
 }
 
