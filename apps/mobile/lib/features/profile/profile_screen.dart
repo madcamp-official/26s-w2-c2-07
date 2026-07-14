@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -62,7 +63,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> updateSettings({bool? captureAlertsEnabled, bool? darkEditorEnabled}) async {
+  Future<void> updateSettings({
+    bool? captureAlertsEnabled,
+    bool? darkEditorEnabled,
+  }) async {
     final current = profile;
     if (current == null) return;
     try {
@@ -83,8 +87,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('설정을 저장하지 못했습니다: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('설정을 저장하지 못했습니다. $e')),
+      );
     }
   }
 
@@ -120,20 +125,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => profile = updated);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('프로필을 수정하지 못했습니다: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('프로필을 수정하지 못했습니다. $e')),
+      );
     }
   }
 
   Future<void> signOut() async {
     await Supabase.instance.client.auth.signOut();
-    // go_router's redirect (driven by onAuthStateChange) sends us to /login.
+  }
+
+  void goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('프로필')),
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: '뒤로 가기',
+          onPressed: goBack,
+          icon: const Icon(Icons.arrow_back_ios_new),
+        ),
+        title: const Text('내 프로필'),
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : loadError != null
@@ -141,9 +161,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('프로필을 불러오지 못했습니다.\n$loadError', textAlign: TextAlign.center),
+                      Text(
+                        '프로필을 불러오지 못했습니다.\n$loadError',
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 8),
-                      OutlinedButton(onPressed: load, child: const Text('다시 시도')),
+                      OutlinedButton(
+                        onPressed: load,
+                        child: const Text('다시 시도'),
+                      ),
                     ],
                   ),
                 )
@@ -158,8 +184,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         CircleAvatar(
           radius: 42,
-          backgroundImage:
-              current.avatarUrl != null ? NetworkImage(current.avatarUrl!) : null,
+          backgroundColor: AppTheme.mist,
+          foregroundColor: AppTheme.coffee,
+          backgroundImage: current.avatarUrl != null
+              ? NetworkImage(current.avatarUrl!)
+              : null,
           child: current.avatarUrl == null
               ? const Icon(Icons.person_outline, size: 42)
               : null,
@@ -174,7 +203,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(
           current.email ?? '',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.muted,
+              ),
         ),
         const SizedBox(height: 28),
         Card(
@@ -184,12 +215,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 leading: const Icon(Icons.bookmark_border),
                 title: const Text('수집한 글감'),
                 trailing: Text('$captureCount'),
+                onTap: () => context.go('/captures'),
               ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.folder_outlined),
-                title: const Text('진행 중 프로젝트'),
+                title: const Text('진행 중인 프로젝트'),
                 trailing: Text('$activeProjectCount'),
+                onTap: () => context.go('/projects'),
               ),
             ],
           ),
@@ -201,9 +234,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: SwitchListTile(
             secondary: const Icon(Icons.notifications_outlined),
             title: const Text('새 글감 알림'),
-            subtitle: const Text('모바일이나 웹에서 새 글감이 추가되면 알려드려요.'),
+            subtitle: const Text('모바일이나 웹에서 글감이 추가되면 알려드려요.'),
             value: current.settings.captureAlertsEnabled,
-            activeThumbColor: AppTheme.moss,
+            activeThumbColor: AppTheme.clay,
             onChanged: (value) => updateSettings(captureAlertsEnabled: value),
           ),
         ),
@@ -216,7 +249,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: const Text('어두운 화면으로 보기'),
             subtitle: const Text('원고를 확인할 때 눈이 편안한 어두운 배경을 사용해요.'),
             value: current.settings.darkEditorEnabled,
-            activeThumbColor: AppTheme.moss,
+            activeThumbColor: AppTheme.clay,
             onChanged: (value) => updateSettings(darkEditorEnabled: value),
           ),
         ),
