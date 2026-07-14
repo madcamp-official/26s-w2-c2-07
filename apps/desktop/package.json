@@ -1,0 +1,45 @@
+{
+  "name": "nook-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nook desktop shell that renders the web frontend identically.",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "start": "electron .",
+    "check": "node scripts/check.mjs",
+    "build:web": "npm --prefix ../web run build && node scripts/prepare-web-bundle.mjs",
+    "dist": "npm run build:web && electron-builder --win",
+    "dist:dir": "npm run build:web && electron-builder --win --dir"
+  },
+  "build": {
+    "appId": "app.nook.desktop",
+    "productName": "Nook",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "web-bundle/**/*",
+      ".env.example",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "web-bundle/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^37.2.1",
+    "electron-builder": "^26.0.12"
+  }
+}
