@@ -58,8 +58,7 @@ class ApiClient {
 
     final response = await http.Response.fromStream(await _client.send(request));
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final payload = response.body.isEmpty ? null : jsonDecode(response.body);
-      throw ApiException(response.statusCode, payload?['error']?['message']);
+      throw ApiException(response.statusCode, _errorMessage(response.body));
     }
     return response;
   }
@@ -75,11 +74,32 @@ class ApiClient {
 
     final response =
         await http.Response.fromStream(await _client.send(request));
-    final payload = response.body.isEmpty ? null : jsonDecode(response.body);
+    final payload = _tryDecodeJson(response.body);
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(response.statusCode, payload?['error']?['message']);
+      throw ApiException(response.statusCode, _errorMessage(response.body));
     }
     return payload;
+  }
+
+  dynamic _tryDecodeJson(String body) {
+    if (body.isEmpty) return null;
+
+    try {
+      return jsonDecode(body);
+    } catch (_) {
+      return body;
+    }
+  }
+
+  String? _errorMessage(String body) {
+    final payload = _tryDecodeJson(body);
+    if (payload is Map<String, dynamic>) {
+      final error = payload['error'];
+      if (error is Map<String, dynamic>) return error['message'] as String?;
+      if (error is String) return error;
+      return payload['message'] as String?;
+    }
+    return payload is String && payload.isNotEmpty ? payload : null;
   }
 }
 
