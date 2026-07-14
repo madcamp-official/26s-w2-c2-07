@@ -8,6 +8,7 @@ import '../../data/models/capture.dart';
 import '../../data/models/tag.dart';
 import '../../data/repositories/captures_repository.dart';
 import '../../data/repositories/tags_repository.dart';
+import '../../shared/async_state.dart';
 import '../../shared/main_shell.dart';
 
 class CapturesScreen extends StatefulWidget {
@@ -206,12 +207,11 @@ class _CapturesScreenState extends State<CapturesScreen> {
             else if (_error != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 48),
-                child: Column(
-                  children: [
-                    Text('글감을 불러오지 못했습니다.\n$_error', textAlign: TextAlign.center),
-                    const SizedBox(height: 8),
-                    OutlinedButton(onPressed: load, child: const Text('다시 시도')),
-                  ],
+                child: BackendErrorState(
+                  title: '글감함을 불러오지 못했어요',
+                  message: '백엔드 서버 연결과 모바일 .env의 API 주소를 확인해 주세요.',
+                  error: _error,
+                  onRetry: load,
                 ),
               )
             else if (items.isEmpty)

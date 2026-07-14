@@ -6,6 +6,7 @@ import '../../core/utils/capture_type_ui.dart';
 import '../../core/utils/date_format.dart';
 import '../../data/models/capture.dart';
 import '../../data/repositories/captures_repository.dart';
+import '../../shared/async_state.dart';
 import '../../shared/main_shell.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -34,8 +35,8 @@ class _HomeScreenState extends State<HomeScreen> {
     await _recentCaptures;
   }
 
-  Future<void> _openCapture(String type) async {
-    final changed = await context.push<bool>('/capture?type=$type');
+  Future<void> _openCapture() async {
+    final changed = await context.push<bool>('/capture');
     if (changed == true) _refresh();
   }
 
@@ -57,13 +58,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              '당신의 글감을 모아보세요.',
+              '오늘의 문장과 장면을 모아 글이 시작될 자리를 마련해요.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
-            _QuickCapturePanel(onStart: () => _openCapture('text')),
-            const SizedBox(height: 24),
-            _CaptureShortcuts(onSelect: _openCapture),
+            _QuickCapturePanel(onStart: _openCapture),
             const SizedBox(height: 28),
             _RecentCaptures(future: _recentCaptures, onRetry: _refresh),
           ],
@@ -90,7 +89,7 @@ class _QuickCapturePanel extends StatelessWidget {
             const SizedBox(height: 14),
             Text('바로 남기기', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            const Text('문장, 사진, 영상, 링크를 열어둔 채로 잊기 전에 기록하세요.'),
+            const Text('문장, 사진, 영상, 링크를 한 화면에서 골라 기록할 수 있어요.'),
             const SizedBox(height: 18),
             FilledButton.icon(
               onPressed: onStart,
@@ -100,56 +99,6 @@ class _QuickCapturePanel extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _CaptureShortcuts extends StatelessWidget {
-  const _CaptureShortcuts({required this.onSelect});
-
-  final ValueChanged<String> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      (Icons.short_text, '조각글', '떠오른 문장부터', 'text'),
-      (Icons.photo_camera_outlined, '사진', '장면을 함께', 'photo'),
-      (Icons.videocam_outlined, '동영상', '순간을 생생히', 'video'),
-      (Icons.link, '링크', '읽을 거리 저장', 'link'),
-    ];
-
-    return Row(
-      children: [
-        for (final item in items)
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(right: item == items.last ? 0 : 10),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => onSelect(item.$4),
-                child: Ink(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppTheme.paper,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(item.$1, color: AppTheme.clay),
-                      const SizedBox(height: 12),
-                      Text(item.$2,
-                          style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 4),
-                      Text(item.$3,
-                          style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
@@ -176,26 +125,30 @@ class _RecentCaptures extends StatelessWidget {
                 child: Center(child: CircularProgressIndicator()),
               );
             }
+
             if (snapshot.hasError) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Column(
-                  children: [
-                    Text('글감을 불러오지 못했습니다.\n${snapshot.error}',
-                        textAlign: TextAlign.center),
-                    const SizedBox(height: 8),
-                    OutlinedButton(onPressed: onRetry, child: const Text('다시 시도')),
-                  ],
+              return BackendErrorState(
+                title: '백엔드와 연결하지 못했어요',
+                message: '최근 글감을 불러오려면 모바일 .env의 API 주소와 서버 실행 상태를 확인해 주세요.',
+                error: snapshot.error,
+                onRetry: onRetry,
+              );
+            }
+
+            final captures = snapshot.data ?? const [];
+            if (captures.isEmpty) {
+              return EmptyState(
+                icon: Icons.bookmark_add_outlined,
+                title: '아직 남긴 글감이 없어요',
+                message: '첫 문장이나 장면을 남기면 여기에 최근 글감이 표시됩니다.',
+                action: FilledButton.icon(
+                  onPressed: () => context.push('/capture'),
+                  icon: const Icon(Icons.add),
+                  label: const Text('글감 추가'),
                 ),
               );
             }
-            final captures = snapshot.data ?? const [];
-            if (captures.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: Text('아직 남긴 글감이 없습니다.')),
-              );
-            }
+
             final recent = captures.take(3).toList();
             return Column(
               children: [
