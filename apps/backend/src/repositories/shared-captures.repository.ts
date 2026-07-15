@@ -7,13 +7,17 @@ import {
   getCaptureById,
 } from "./captures.repository.js";
 
-// shared_visibility -> visibility로 이름을 바꾸고, 본인 소유 여부를 알 수 있게 creator를 채워 넣는다.
-function toSharedCaptureShape(row: any, creator: { id: string; display_name: string | null; avatar_url: string | null }) {
+// shared_visibility -> visibility로 이름을 바꾸고, 본인 소유 여부를 알 수 있게 creator/is_mine을 채워 넣는다.
+function toSharedCaptureShape(
+  row: any,
+  creator: { id: string; display_name: string | null; avatar_url: string | null },
+  viewerId: string,
+) {
   const { shared_visibility, ...rest } = row;
-  return { ...rest, visibility: shared_visibility, creator };
+  return { ...rest, visibility: shared_visibility, creator, is_mine: row.user_id === viewerId };
 }
 
-async function attachCreators(rows: any[]): Promise<any[]> {
+async function attachCreators(rows: any[], viewerId: string): Promise<any[]> {
   const userIds = [...new Set(rows.map((row) => row.user_id as string))];
   if (!userIds.length) return [];
 
@@ -25,7 +29,11 @@ async function attachCreators(rows: any[]): Promise<any[]> {
 
   const profileById = new Map((data ?? []).map((profile: any) => [profile.id, profile]));
   return rows.map((row) =>
-    toSharedCaptureShape(row, profileById.get(row.user_id) ?? { id: row.user_id, display_name: null, avatar_url: null }),
+    toSharedCaptureShape(
+      row,
+      profileById.get(row.user_id) ?? { id: row.user_id, display_name: null, avatar_url: null },
+      viewerId,
+    ),
   );
 }
 
@@ -44,18 +52,17 @@ function matchesQuery(capture: any, q: string) {
   return haystack.includes(needle);
 }
 
-export async function listSharedCaptures(userId: string, q?: string) {
+export async function listSharedCaptures(viewerId: string, q?: string) {
   const { data, error } = await supabaseAdmin
     .from("captures")
     .select(CAPTURE_SELECT_WITH_TAGS)
     .eq("is_shared", true)
-    .neq("user_id", userId)
     .order("created_at", { ascending: false });
 
   if (error) throw HttpError.badRequest(error.message);
 
   const withImages = await attachImageUrls(data.map(flattenTags));
-  const withCreators = await attachCreators(withImages);
+  const withCreators = await attachCreators(withImages, viewerId);
 
   return q ? withCreators.filter((capture) => matchesQuery(capture, q)) : withCreators;
 }

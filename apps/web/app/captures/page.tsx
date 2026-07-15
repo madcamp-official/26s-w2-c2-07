@@ -20,7 +20,7 @@ import type { ApiCapture, ApiTag } from "../api-types";
 import { captureExcerpt, captureTitle, captureDate } from "../capture-display";
 import { AddButton, PageHead, Shell, TypeBadge } from "../components";
 import { CaptureMedia } from "../components/capture-media";
-import { type CaptureType } from "../data";
+import { nextTagColor, type CaptureType } from "../data";
 
 const captureIcons = { text: Type, photo: Image, link: Link2, video: Video };
 const filters: Array<{ value: "all" | CaptureType; label: string }> = [
@@ -74,7 +74,7 @@ export default function CapturesPage() {
     const name = newTagName.trim();
     if (!name || tags.some((tag) => tag.name === name)) return;
     setNewTagName("");
-    await api.post("/tags", { name, color: "#879287" });
+    await api.post("/tags", { name, color: nextTagColor(tags.length) });
     loadTags();
   };
 

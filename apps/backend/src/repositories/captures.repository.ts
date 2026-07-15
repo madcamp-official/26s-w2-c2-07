@@ -126,6 +126,7 @@ export async function updateCapture(
       link_title: preview?.linkTitle,
       link_description: preview?.linkDescription,
       link_image_url: preview?.linkImageUrl,
+      is_shared: input.isShared,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", userId)

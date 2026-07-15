@@ -1,7 +1,7 @@
 import * as sharedCapturesRepository from "../repositories/shared-captures.repository.js";
 
-export function listSharedCaptures(userId: string, q?: string) {
-  return sharedCapturesRepository.listSharedCaptures(userId, q);
+export function listSharedCaptures(viewerId: string, q?: string) {
+  return sharedCapturesRepository.listSharedCaptures(viewerId, q);
 }
 
 export function saveSharedCapture(userId: string, captureId: string) {

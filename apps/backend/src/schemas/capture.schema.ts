@@ -18,6 +18,7 @@ export const updateCaptureSchema = z.object({
   content: z.string().max(10_000).optional(),
   url: z.string().url().optional(),
   tagIds: z.array(z.string().uuid()).max(20).optional(),
+  isShared: z.boolean().optional(),
 });
 
 export const captureIdParamsSchema = z.object({
