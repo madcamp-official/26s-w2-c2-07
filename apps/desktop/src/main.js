@@ -104,19 +104,15 @@ function bundledWebServerPath() {
     process.resourcesPath,
     "app.asar.unpacked",
     "web-bundle",
-    "apps",
-    "web",
     "server.js"
   );
   const unpackedDirPath = path.join(
     process.resourcesPath,
     "app",
     "web-bundle",
-    "apps",
-    "web",
     "server.js"
   );
-  const devPath = path.join(desktopRoot, "web-bundle", "apps", "web", "server.js");
+  const devPath = path.join(desktopRoot, "web-bundle", "server.js");
 
   for (const candidate of [unpackedPath, unpackedDirPath, devPath]) {
     if (fs.existsSync(candidate)) return candidate;

@@ -8,21 +8,17 @@ const repoRoot = path.resolve(desktopRoot, "..", "..");
 const webRoot = path.join(repoRoot, "apps", "web");
 const bundleRoot = path.join(desktopRoot, "web-bundle");
 const standaloneRoot = path.join(webRoot, ".next", "standalone");
-const standaloneWebRoot = path.join(standaloneRoot, "apps", "web");
 
 await rm(bundleRoot, { recursive: true, force: true });
 await mkdir(bundleRoot, { recursive: true });
 
 await cp(standaloneRoot, bundleRoot, { recursive: true });
-await mkdir(path.join(bundleRoot, "apps", "web", ".next"), {
-  recursive: true
-});
-await cp(path.join(webRoot, ".next", "static"), path.join(standaloneWebRoot, ".next", "static"), {
+await cp(path.join(webRoot, ".next", "static"), path.join(bundleRoot, ".next", "static"), {
   recursive: true
 });
 
 try {
-  await cp(path.join(webRoot, "public"), path.join(standaloneWebRoot, "public"), {
+  await cp(path.join(webRoot, "public"), path.join(bundleRoot, "public"), {
     recursive: true
   });
 } catch {
