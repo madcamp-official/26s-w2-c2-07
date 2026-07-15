@@ -9,12 +9,12 @@ export interface LinkPreviewFields {
   linkImageUrl: string | null;
 }
 
-const CAPTURE_SELECT_WITH_TAGS =
+export const CAPTURE_SELECT_WITH_TAGS =
   "*, capture_tags(tags(id, name, color)), capture_assets(storage_path)";
 
 // capture_tags(tags(...)) 중첩 구조를 tags: [{id,name,color}] 형태로 펼쳐준다
 // (Database 타입이 아직 생성 전이라 supabase 응답은 any로 취급된다 — 다른 repository 함수들과 동일)
-function flattenTags(row: any) {
+export function flattenTags(row: any) {
   const { capture_tags, ...rest } = row;
   return { ...rest, tags: (capture_tags ?? []).map((ct: any) => ct.tags) };
 }
@@ -22,7 +22,7 @@ function flattenTags(row: any) {
 // capture_assets(storage_path)를 실제 브라우저에서 열람 가능한 서명된 URL로 바꿔준다.
 // 버킷이 public이든 private이든 signed URL은 항상 동작하므로 버킷 설정을 몰라도 안전하다.
 // 목록 조회에서는 경로들을 모아 한 번의 Storage API 호출로 배치 발급해 왕복을 줄인다.
-async function attachImageUrls(rows: any[]): Promise<any[]> {
+export async function attachImageUrls(rows: any[]): Promise<any[]> {
   const paths = rows.flatMap((row) =>
     (row.capture_assets ?? []).map((asset: { storage_path: string }) => asset.storage_path),
   );
@@ -100,6 +100,7 @@ export async function createCapture(userId: string, input: CreateCaptureInput, p
       link_title: preview?.linkTitle,
       link_description: preview?.linkDescription,
       link_image_url: preview?.linkImageUrl,
+      is_shared: input.isShared ?? false,
     })
     .select("id")
     .single();

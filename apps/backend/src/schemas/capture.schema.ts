@@ -11,6 +11,7 @@ export const createCaptureSchema = z.object({
   content: z.string().max(10_000).optional(), // 조각글 본문 / 링크 메모
   url: z.string().url().optional(), // type === "link"
   tagIds: z.array(z.string().uuid()).max(20).optional(),
+  isShared: z.boolean().optional(), // true면 글감 서핑에 노출된다
 });
 
 export const updateCaptureSchema = z.object({
