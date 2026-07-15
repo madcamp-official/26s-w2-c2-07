@@ -4,7 +4,7 @@ import { ExternalLink, Flag, Image, Link2, Search, Type, Video } from "lucide-re
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import type { ApiSharedCapture } from "../api-types";
-import { captureExcerpt, captureTitle } from "../capture-display";
+import { captureExcerpt, captureTitle, captureHasTitle } from "../capture-display";
 import { PageHead, Shell, TypeBadge } from "../components";
 import { CaptureMedia } from "../components/capture-media";
 
@@ -74,7 +74,7 @@ export default function SurfPage() {
                   <Icon />
                 </span>
                 <TypeBadge type={capture.type} />
-                <h3>{captureTitle(capture)}</h3>
+                {captureHasTitle(capture) && <h3>{captureTitle(capture)}</h3>}
                 <p>{captureExcerpt(capture)}</p>
                 <small>
                   {capture.creator.display_name ?? "익명"} · 저장{" "}
@@ -94,7 +94,7 @@ export default function SurfPage() {
           >
             <CaptureMedia capture={selected} variant="detail" />
             <TypeBadge type={selected.type} />
-            <h2>{captureTitle(selected)}</h2>
+            {captureHasTitle(selected) && <h2>{captureTitle(selected)}</h2>}
             <p>{captureExcerpt(selected)}</p>
             {selected.type === "link" && selected.url && (
               <a

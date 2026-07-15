@@ -1,5 +1,9 @@
 import type { ApiCapture } from "./api-types";
 
+export function captureHasTitle(c: ApiCapture): boolean {
+  return c.type === "link";
+}
+
 export function captureTitle(c: ApiCapture): string {
   if (c.type === "link") return c.link_title || c.url || "링크";
   if (c.type === "photo") return c.content?.slice(0, 40) || "사진 기록";

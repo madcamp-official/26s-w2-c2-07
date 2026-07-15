@@ -277,9 +277,7 @@ function CaptureReference({
           >
             {captureTitle(capture)} ↗
           </a>
-        ) : (
-          <b>{captureTitle(capture)}</b>
-        )}
+        ) : null}
         <p>{captureExcerpt(capture)}</p>
         <button onClick={() => void onAction(capture)}>{actionLabel}</button>
       </div>

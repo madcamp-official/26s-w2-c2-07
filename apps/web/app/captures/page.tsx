@@ -17,7 +17,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import type { ApiCapture, ApiTag } from "../api-types";
-import { captureExcerpt, captureTitle, captureDate } from "../capture-display";
+import { captureExcerpt, captureTitle, captureHasTitle, captureDate } from "../capture-display";
 import { AddButton, PageHead, Shell, TypeBadge } from "../components";
 import { CaptureMedia } from "../components/capture-media";
 import { nextTagColor, type CaptureType } from "../data";
@@ -155,7 +155,7 @@ export default function CapturesPage() {
                     </span>
                     <CaptureMedia capture={capture} variant="card" />
                     <div>
-                      <b>{captureTitle(capture)}</b>
+                      {captureHasTitle(capture) && <b>{captureTitle(capture)}</b>}
                       <p>{captureExcerpt(capture)}</p>
                       <div className="capture-tags">
                         {capture.tags.map((tag) => (

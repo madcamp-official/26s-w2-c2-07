@@ -20,7 +20,7 @@ import type {
   ApiProject,
   ApiProjectCaptureLink,
 } from "../../api-types";
-import { captureExcerpt, captureTitle } from "../../capture-display";
+import { captureExcerpt, captureHasTitle, captureTitle } from "../../capture-display";
 import { StatusBadge } from "../../components";
 import { CaptureSearchControls } from "../../components/capture-search-controls";
 import type { CaptureType } from "../../data";
@@ -325,7 +325,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
               <small>
                 {new Date(capture.created_at).toLocaleDateString("ko-KR")}
               </small>
-              <b>{captureTitle(capture)}</b>
+              {captureHasTitle(capture) && <b>{captureTitle(capture)}</b>}
               <p>{captureExcerpt(capture)}</p>
             </Link>
           ))}
@@ -369,7 +369,7 @@ export function ProjectDetailClient({ projectId }: { projectId: string }) {
                   }
                 >
                   <span>
-                    <b>{captureTitle(capture)}</b>
+                    {captureHasTitle(capture) && <b>{captureTitle(capture)}</b>}
                     <small>{captureExcerpt(capture)}</small>
                   </span>
                   {selectedIds.has(capture.id) && <Check />}

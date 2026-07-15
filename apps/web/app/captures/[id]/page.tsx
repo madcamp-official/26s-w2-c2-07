@@ -9,6 +9,7 @@ import type { ApiCapture, ApiTag } from "../../api-types";
 import {
   captureDate,
   captureExcerpt,
+  captureHasTitle,
   captureTitle,
 } from "../../capture-display";
 import { Shell, TypeBadge } from "../../components";
@@ -103,7 +104,7 @@ export default function CaptureDetailPage() {
             <TypeBadge type={capture.type} />
             <time>{captureDate(capture)}</time>
           </div>
-          <h1>{captureTitle(capture)}</h1>
+          {captureHasTitle(capture) && <h1>{captureTitle(capture)}</h1>}
           <div className="detail-tags">
             {capture.tags.map((tag) => (
               <span key={tag.id}>#{tag.name}</span>

@@ -14,7 +14,7 @@ import {
 import { useEffect, useState } from "react";
 import { api } from "./api";
 import type { ApiCapture, ApiProject } from "./api-types";
-import { captureDate, captureExcerpt, captureTitle } from "./capture-display";
+import { captureDate, captureExcerpt, captureHasTitle, captureTitle } from "./capture-display";
 import { PageHead, Shell, StatusBadge, TypeBadge } from "./components";
 
 const icons = {
@@ -88,7 +88,7 @@ export default function Home() {
                     <Icon />
                   </span>
                   <div>
-                    <b>{captureTitle(c)}</b>
+                    {captureHasTitle(c) && <b>{captureTitle(c)}</b>}
                     <p>{captureExcerpt(c)}</p>
                   </div>
                   <TypeBadge type={c.type} />
