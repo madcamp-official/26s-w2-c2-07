@@ -86,4 +86,5 @@ export interface ApiSharedCapture extends ApiCapture {
   saved_count: number;
   report_count: number;
   visibility: "visible" | "limited";
+  is_mine: boolean;
 }

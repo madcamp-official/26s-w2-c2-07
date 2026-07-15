@@ -7,7 +7,7 @@ import { api } from "../../api";
 import type { ApiCapture, ApiTag } from "../../api-types";
 import { PageHead, Shell } from "../../components";
 import { supabase } from "../../supabase-client";
-import { type CaptureType } from "../../data";
+import { nextTagColor, type CaptureType } from "../../data";
 
 const STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET!;
 
@@ -55,7 +55,10 @@ export default function NewCapturePage() {
 
     setCreatingTag(true);
     try {
-      const tag = await api.post<ApiTag>("/tags", { name, color: "#879287" });
+      const tag = await api.post<ApiTag>("/tags", {
+        name,
+        color: nextTagColor(tags.length),
+      });
       setTags((current) => [...current, tag]);
       setSelectedTagIds((current) => [...current, tag.id]);
       setNewTagName("");
@@ -221,19 +224,23 @@ export default function NewCapturePage() {
               </button>
             </form>
           </fieldset>
-          <label className="share-toggle">
-            <input
-              type="checkbox"
-              checked={isShared}
-              onChange={(event) => setIsShared(event.target.checked)}
-            />
-            <span>
+          <div className="share-toggle">
+            <div>
               <b>글감 서핑에 공유</b>
               <small>
                 다른 사용자가 이 글감을 검색하고 자신의 글감함에 담을 수 있어요.
               </small>
-            </span>
-          </label>
+            </div>
+            <button
+              type="button"
+              className={`toggle ${isShared ? "on" : ""}`}
+              onClick={() => setIsShared((current) => !current)}
+              role="switch"
+              aria-checked={isShared}
+            >
+              <i />
+            </button>
+          </div>
           <div className="form-actions">
             <button className="button ghost" onClick={() => router.back()}>
               취소

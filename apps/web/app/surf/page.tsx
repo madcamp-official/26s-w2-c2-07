@@ -1,6 +1,6 @@
 "use client";
 
-import { Flag, Image, Link2, Search, Type, Video } from "lucide-react";
+import { ExternalLink, Flag, Image, Link2, Search, Type, Video } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import type { ApiSharedCapture } from "../api-types";
@@ -89,13 +89,28 @@ export default function SurfPage() {
       {selected && (
         <div className="modal-backdrop" onClick={() => setSelected(null)}>
           <section
-            className="modal surf-detail-modal"
+            className="dialog surf-detail-modal"
             onClick={(event) => event.stopPropagation()}
           >
             <CaptureMedia capture={selected} variant="detail" />
             <TypeBadge type={selected.type} />
             <h2>{captureTitle(selected)}</h2>
             <p>{captureExcerpt(selected)}</p>
+            {selected.type === "link" && selected.url && (
+              <a
+                className="link-preview"
+                href={selected.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <div>
+                  <small>{selected.url}</small>
+                  <b>{selected.link_title ?? selected.url}</b>
+                  <p>{selected.link_description}</p>
+                </div>
+                <ExternalLink />
+              </a>
+            )}
             <div className="tag-row">
               {selected.tags.map((tag) => (
                 <span key={tag.id}>#{tag.name}</span>
@@ -105,14 +120,18 @@ export default function SurfPage() {
               공유한 사람: {selected.creator.display_name ?? "익명"} · 저장{" "}
               {selected.saved_count}
             </small>
-            <div className="modal-actions">
-              <button className="ghost" onClick={() => reportCapture(selected)}>
-                <Flag /> 신고
-              </button>
-              <button className="primary" onClick={() => saveCapture(selected)}>
-                내 글감함에 추가
-              </button>
-            </div>
+            {selected.is_mine ? (
+              <p className="surf-own-note">내가 공유한 글감</p>
+            ) : (
+              <div className="modal-actions">
+                <button className="button ghost" onClick={() => reportCapture(selected)}>
+                  <Flag /> 신고
+                </button>
+                <button className="button primary" onClick={() => saveCapture(selected)}>
+                  내 글감함에 추가
+                </button>
+              </div>
+            )}
           </section>
         </div>
       )}

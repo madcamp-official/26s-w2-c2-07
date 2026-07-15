@@ -104,6 +104,7 @@ let sharedCaptures: ApiSharedCapture[] = [
     saved_count: 18,
     report_count: 0,
     visibility: "visible",
+    is_mine: false,
   },
   {
     id: "shared-link",
@@ -126,6 +127,7 @@ let sharedCaptures: ApiSharedCapture[] = [
     saved_count: 42,
     report_count: 1,
     visibility: "visible",
+    is_mine: false,
   },
   {
     id: "shared-video",
@@ -148,6 +150,7 @@ let sharedCaptures: ApiSharedCapture[] = [
     saved_count: 7,
     report_count: 0,
     visibility: "visible",
+    is_mine: false,
   },
 ];
 
@@ -339,6 +342,7 @@ export function mockApiResponse<T>(path: string, options: RequestInit = {}): T {
         tags: body.tagIds
           ? tags.filter((tag) => body.tagIds.includes(tag.id))
           : capture.tags,
+        is_shared: body.isShared ?? capture.is_shared,
         updated_at: now,
       });
     }

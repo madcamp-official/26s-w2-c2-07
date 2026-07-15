@@ -26,6 +26,7 @@ export default function CaptureDetailPage() {
     content: "",
     url: "",
     tagIds: [] as string[],
+    isShared: false,
   });
 
   const loadCapture = () => {
@@ -37,6 +38,7 @@ export default function CaptureDetailPage() {
           content: result.content ?? "",
           url: result.url ?? "",
           tagIds: result.tags.map((tag) => tag.id),
+          isShared: result.is_shared ?? false,
         });
       })
       .catch(() => setNotFound(true));
@@ -58,6 +60,7 @@ export default function CaptureDetailPage() {
         content: draft.content,
         url: capture?.type === "link" ? draft.url : undefined,
         tagIds: draft.tagIds,
+        isShared: draft.isShared,
       });
       setEditing(false);
       loadCapture();
@@ -185,6 +188,25 @@ export default function CaptureDetailPage() {
                   ))}
                 </div>
               </fieldset>
+              <div className="share-toggle">
+                <div>
+                  <b>글감 서핑에 공유</b>
+                  <small>
+                    다른 사용자가 이 글감을 검색하고 자신의 글감함에 담을 수 있어요.
+                  </small>
+                </div>
+                <button
+                  type="button"
+                  className={`toggle ${draft.isShared ? "on" : ""}`}
+                  onClick={() =>
+                    setDraft((current) => ({ ...current, isShared: !current.isShared }))
+                  }
+                  role="switch"
+                  aria-checked={draft.isShared}
+                >
+                  <i />
+                </button>
+              </div>
               <div className="form-actions">
                 <button
                   type="button"
