@@ -137,6 +137,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await Supabase.instance.client.auth.signOut();
   }
 
+  Future<void> deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('회원 탈퇴'),
+        content: const Text(
+          '계정을 삭제하면 프로필과 개인 데이터가 삭제됩니다. 이 작업은 되돌릴 수 없어요. 정말 탈퇴할까요?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('탈퇴'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _meRepository.delete();
+      await Supabase.instance.client.auth.signOut();
+      if (!mounted) return;
+      context.go('/login');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('회원 탈퇴에 실패했어요. $e')),
+      );
+    }
+  }
+
   void goBack() {
     if (context.canPop()) {
       context.pop();
@@ -265,6 +301,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onPressed: signOut,
           icon: const Icon(Icons.logout),
           label: const Text('로그아웃'),
+        ),
+        TextButton.icon(
+          onPressed: deleteAccount,
+          icon: const Icon(Icons.person_remove_outlined),
+          label: const Text('회원 탈퇴'),
+          style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
         ),
       ],
     );
