@@ -22,8 +22,8 @@
 
 | 이름 | 학교 | GitHub | 역할 |
 |---|---|---|---|
-| 양우현 | KAIST | [hyun020215](https://github.com/hyun020215) | 기획, 웹 프론트엔드, QA |
-| 이서영 | 성균관대학교 | [sksy930](https://github.com/sksy930) | 백엔드, Supabase, QA |
+| 양우현 | KAIST | [hyun020215](https://github.com/hyun020215) | 기획, 웹 프론트엔드, 모바일·데스크탑 클라이언트, QA |
+| 이서영 | 성균관대학교 | [sksy930](https://github.com/sksy930) | 백엔드, Supabase, API 설계, QA |
 
 ---
 
@@ -37,60 +37,147 @@
 
 ## 기획안
 
-- **산출물 주제:** 일상의 영감을 수집하고 여러 원고와 프로젝트로 발전시키는 웹·모바일 서비스 Nook
-- **제작 목적:** 서로 다른 앱에 흩어지는 문장·사진·링크를 같은 계정으로 수집하고, 웹에서 글쓰기까지 자연스럽게 이어지도록 한다.
-- **선택 옵션:** Cross-Platform
-- **핵심 구현 요소:**
-  - 웹과 모바일에서 같은 Supabase Auth 계정 및 글감 데이터 사용
-  - 조각글·사진·링크, 다중 태그, 프로젝트·원고 관리
-  - 다른 사용자가 공유한 글감을 검색·서핑하고 내 글감함에 담는 공유 글감 탐색
-  - 원고 자동 저장과 완료 프로젝트 PDF·DOCX·TXT 내보내기
-- **사용 / 시연 시나리오:** Google 로그인 → 모바일 또는 웹에서 태그와 글감 저장 → 웹 글감함에서 수정·검색 → 프로젝트에 글감 연결 → 여러 원고 작성 → 프로젝트 완료 → 파일 내보내기
-- **팀원별 역할:** 웹·백엔드·모바일을 기능 단위로 분담하고 API 계약, 인증, 통합 QA는 공동 검증한다.
+### 서비스 개요
+
+| 항목 | 내용 |
+|---|---|
+| 서비스명 | Nook |
+| 한 줄 소개 | 일상의 글감이 원고가 되는 따뜻하고 미니멀한 글쓰기 작업실 |
+| 핵심 가치 | 모바일에서 빠르게 수집하고, 웹/데스크탑에서 차분하게 정리하고, 프로젝트와 원고로 발전시킨다. |
+| 디자인 방향 | Brunch의 여백감은 참고하되, Nook만의 따뜻한 갈색 팔레트와 편안한 종이 질감을 중심으로 구성 |
+| 선택 옵션 | Cross-Platform |
+
+### 문제 정의와 해결 방향
+
+| 문제 | 해결 방향 | 구현 화면/기능 |
+|---|---|---|
+| 문장, 사진, 링크가 여러 앱에 흩어짐 | 같은 계정의 글감함으로 통합 수집 | 모바일 홈/글감 추가, 웹·데스크탑 글감함 |
+| 수집한 자료가 글쓰기까지 이어지지 않음 | 프로젝트와 원고에 글감을 연결하고 삽입 | 프로젝트 상세, 원고 수정 화면 |
+| 모바일은 수집에 강하지만 긴 글 작성은 불편함 | 모바일은 빠른 수집, 웹·데스크탑은 원고 편집 중심 | Flutter 앱, Next.js 웹, Electron 데스크탑 |
+| 좋은 글감을 혼자만 보관함 | 공유 글감 서핑과 내 글감함 저장 제공 | 글감 서핑 탭, 신고/저장 흐름 |
+| 네트워크가 불안정할 때 데스크탑 사용성이 떨어짐 | 데스크탑 앱은 로컬 파일 큐를 두고 추후 동기화 | Electron preload/offline queue |
+
+### 핵심 구현 요소
+
+| 영역 | 구현 내용 |
+|---|---|
+| 인증·프로필 | Supabase Auth 기반 Google 로그인, 프로필 조회/수정, 로그아웃, 회원 탈퇴 |
+| 글감 수집 | 조각글·사진·동영상·링크 생성, 수정, 삭제, 다중 태그, 공유 여부 설정 |
+| 글감함 | 검색, 태그 필터, 리스트/카드 보기, 태그 관리, 상세 수정 |
+| 프로젝트 | 진행 중/완료 섹션, 프로젝트 생성/수정/삭제, 상태 전환, 글감 연결/해제 |
+| 원고 | 복수 원고, 자동 저장 전제, 연결 글감 섹션, 전체 글감 검색/삽입, 완료 프로젝트 편집 제한 |
+| 글감 서핑 | 공유 글감 카드 탐색, 텍스트 검색, 상세 모달, 내 글감함 추가, 신고 확인 모달 |
+| 내보내기 | 완료 프로젝트에 한해 PDF·DOCX·TXT 다운로드 |
+| Cross-Platform | 웹, Flutter 모바일, Electron 데스크탑이 동일 API 계약과 인증 토큰 사용 |
+
+### 사용 / 시연 시나리오
+
+1. Google 계정으로 로그인한다.
+2. 모바일에서 떠오른 문장, 사진, 동영상, 링크를 태그와 함께 저장한다.
+3. 웹 또는 데스크탑 글감함에서 글감을 검색하고 상세 내용을 수정한다.
+4. 프로젝트를 만들고 필요한 글감을 연결한다.
+5. 원고 수정 화면에서 이미 연결된 글감과 모든 글감을 나누어 탐색하며 본문에 삽입한다.
+6. 프로젝트를 완료 상태로 바꾼 뒤 PDF·DOCX·TXT로 내보낸다.
+7. 글감 서핑에서 다른 사용자의 공유 글감을 검색하고 내 글감함에 저장하거나 신고한다.
 
 ### 개발 일정
 
-| 날짜 | 목표 |
-|---|---|
-| Day 1 | 저장소·Supabase·인증·공통 레이아웃 구성 |
-| Day 2 | 글감 CRUD, 사진 업로드, 링크 미리보기 |
-| Day 3 | 태그, 프로젝트, 프로젝트-글감 연결 |
-| Day 4 | 복수 원고, 자동 저장, 전체 글감 검색·삽입 |
-| Day 5 | 모바일 수집 화면과 웹·모바일 데이터 연동 |
-| Day 6 | 설정, 프로필 연동, 상태 전환, 내보내기 및 QA |
-| Day 7 | 반응형 수정, 회귀 테스트, 문서화, 배포 |
+| 날짜 | 목표 | 산출물 |
+|---|---|---|
+| Day 1 | 저장소·Supabase·인증·공통 레이아웃 구성 | 기본 앱 셸, 환경 변수, 로그인 흐름 |
+| Day 2 | 글감 CRUD, 사진/동영상 업로드, 링크 미리보기 | 글감 추가·상세·수정, Storage 연동 |
+| Day 3 | 태그, 프로젝트, 프로젝트-글감 연결 | 태그 관리, 프로젝트 상세, 연결 모달 |
+| Day 4 | 복수 원고, 자동 저장, 전체 글감 검색·삽입 | 원고 편집 화면, 완료 프로젝트 제한 |
+| Day 5 | 모바일 수집 화면과 웹·모바일 데이터 연동 | Flutter 앱, 캐싱, 기본 오류 컴포넌트 |
+| Day 6 | 공유 글감 서핑, 설정, 프로필, 내보내기 | 서핑 탭, 신고/저장, PDF·DOCX·TXT |
+| Day 7 | Electron 데스크탑, 반응형 수정, 문서화, QA | 데스크탑 앱, README, 회귀 테스트 |
 
 ---
 
 ## 구현 명세서
 
-| 구현 요소 | 설명 | 우선순위 |
-|---|---|---|
-| 인증·프로필 | Google 로그인 계정과 프로필을 동일 사용자 ID로 연동 | 필수 |
-| 글감·태그 | 글감 CRUD, 작성 중 태그 생성, 다중 태그 연결, 검색·필터 | 필수 |
-| 프로젝트·원고 | 상태별 프로젝트, 전체 글감 연결 모달, 복수 원고, 멱등 생성, 자동 저장 | 필수 |
-| 글감 서핑 | 공유 글감 검색, 내 글감함에 추가, 신고·노출 제한·알림 흐름 | 필수 |
-| Cross-Platform | 모바일에서 저장한 글감을 별도 설정 없이 웹에 동기화 | 필수 |
-| 내보내기 | 완료 프로젝트를 PDF·DOCX·TXT로 다운로드 | 선택 |
-| 사용자 설정 | 실제 저장되는 알림·편집 화면 설정 | 선택 |
+### 필수 기능
+
+- [x] Google 로그인 / 세션 유지 — Supabase Auth access token을 웹·모바일·데스크탑에서 동일하게 사용
+- [x] 내 프로필 조회·수정 — 로그인 계정의 이름, 프로필 이미지, 설정을 프로필 화면과 연동
+- [x] 로그아웃 / 회원 탈퇴 — 모바일과 웹에서 확인 모달을 거친 뒤 실행
+- [x] 글감 생성 / 조회 / 수정 / 삭제 — 조각글·사진·동영상·링크 타입 지원
+- [x] 글감 작성 중 새 태그 생성 및 다중 태그 연결 — `tagIds` 기반으로 태그 목록 전체 교체
+- [x] 글감함 검색·필터 — 제목, 내용, 태그, 타입 기준 검색과 리스트/카드 보기 전환
+- [x] 프로젝트 생성 / 수정 / 삭제 — 진행 중(`active`)과 완료(`done`) 상태만 사용
+- [x] 프로젝트 글감 연결 / 해제 — 모든 글감을 검색해 프로젝트에 연결하고 중복 연결 방지
+- [x] 복수 원고 생성 / 수정 / 삭제 — 프로젝트 안에 여러 원고를 두고 원고별 편집 가능
+- [x] 원고 편집 화면의 글감 연결 — 이미 연결된 글감과 모든 글감을 섹션으로 나누고 연결 글감 섹션은 접기/펼치기 지원
+- [x] 완료 프로젝트 편집 제한 — 완료 상태에서는 원고 생성, 글감 추가, 원고 수정 비활성화
+- [x] Cross-Platform 동기화 — 모바일에서 수집한 글감을 웹·데스크탑에서 같은 계정으로 확인
+- [x] Electron 데스크탑 앱 — 웹 UI를 동일하게 로드하고 개발 서버/번들 서버 모두 지원
+
+### 선택 기능 / 차별화 기능
+
+- [x] 글감 서핑 — 다른 사용자가 공유한 글감을 Pinterest식 카드 UI로 검색·탐색
+- [x] 공유 글감 내 글감함에 추가 — 원본 글감을 복사해 내 글감으로 저장
+- [x] 공유 글감 신고 — 신고 확인 모달을 거쳐 중복 신고를 막고 누적 시 노출 제한
+- [x] 완료 프로젝트 내보내기 — PDF·DOCX·TXT 형식 다운로드
+- [x] 원고 다크 에디터 — 앱 전체 다크 모드가 아니라 원고 수정 화면에만 적용되는 설정
+- [x] 데스크탑 오프라인 큐 — 백엔드 연결 실패 시 로컬 파일에 작업을 임시 저장할 수 있는 기반
+- [x] 데스크탑 스플래시 / 로딩 안정화 — Nook 로고와 캐치프레이즈를 먼저 보여주고 웹 화면 준비 후 전환
+- [ ] 알림 실시간 전달 — 공유 글감 저장·신고·노출 제한 알림의 DB/실시간 전달은 백엔드 TODO
+- [ ] 서버 측 원고 생성 멱등성 — 프론트 중복 클릭 방어는 구현했으나 `clientRequestId` 기반 서버 멱등 처리는 TODO
+
+### 플랫폼별 구현 범위
+
+| 기능 | Web | Mobile | Desktop |
+|---|---:|---:|---:|
+| 로그인 / 세션 유지 | ✅ | ✅ | ✅ |
+| 글감 추가 / 수정 / 삭제 | ✅ | ✅ | ✅ |
+| 태그 관리 | ✅ | ✅ | ✅ |
+| 글감 서핑 / 신고 / 저장 | ✅ | ✅ | ✅ |
+| 프로젝트 목록 / 상세 | ✅ | ✅ | ✅ |
+| 원고 편집 | ✅ | ✅ | ✅ |
+| 완료 프로젝트 내보내기 | ✅ | ✅ | ✅ |
+| 프로필 / 설정 | ✅ | ✅ | ✅ |
+| 오프라인 큐 | - | - | ✅ |
 
 ---
 
 ## 아키텍처
 
-```text
-Next.js Web ─┐
-             ├─ Bearer Access Token ─ Express REST API
-Flutter Mobile ─┘                     ├─ Zod 입력 검증
-                                      ├─ 사용자 소유권 검증
-                                      ├─ 링크 미리보기 / 문서 내보내기
-                                      └─ Supabase
-                                           ├─ Auth
-                                           ├─ PostgreSQL + RLS
-                                           └─ Storage
+```mermaid
+flowchart TB
+  User[사용자] --> Web[Next.js Web]
+  User --> Mobile[Flutter Mobile]
+  User --> Desktop[Electron Desktop]
+
+  Desktop -->|개발: NOOK_WEB_APP_URL| Web
+  Desktop -->|배포: bundled Next server| Bundled[Local Next Server]
+  Desktop -->|오프라인 작업 큐| LocalQueue[(offline-queue.json)]
+
+  Web --> API[Express REST API]
+  Mobile --> API
+  Bundled --> API
+  Desktop --> API
+
+  API --> Auth[Supabase Auth]
+  API --> DB[(Supabase PostgreSQL + RLS)]
+  API --> Storage[Supabase Storage]
+  API --> Preview[Link Preview]
+  API --> Export[PDF / DOCX / TXT Export]
+
+  DB --> Profiles[profiles / user_settings]
+  DB --> Captures[captures / tags / assets]
+  DB --> Projects[projects / documents]
+  DB --> Shared[shared saves / reports]
 ```
 
-웹과 모바일은 동일한 REST API 계약을 사용한다. API 서버가 service-role 키를 사용하더라도 PostgreSQL RLS를 유지하여 이중으로 보호한다.
+| 계층 | 역할 | 주요 기술 |
+|---|---|---|
+| Web Client | 글감함, 프로젝트, 원고 편집, 설정, 글감 서핑 | Next.js, TypeScript, CSS |
+| Mobile Client | 빠른 글감 수집, 글감함, 프로젝트 확인, 서핑 | Flutter, Dart, Supabase Flutter |
+| Desktop Client | 웹과 동일한 UI를 데스크탑 앱으로 제공, 로컬 큐 보관 | Electron, bundled Next server |
+| API Server | 인증 토큰 검증, 소유권 검증, CRUD, 내보내기 | Node.js, Express, Zod |
+| Data Layer | 사용자 데이터, 파일, 인증 세션 저장 | Supabase Auth, PostgreSQL, Storage, RLS |
+
+웹·모바일·데스크탑은 동일한 REST API 계약을 사용한다. API 서버가 service-role 키를 사용하더라도 repository 레벨에서 `user_id`와 `project_id` 필터를 강제하고, PostgreSQL RLS 정책도 유지해 이중 보호한다.
 
 ---
 
@@ -100,156 +187,136 @@ Flutter Mobile ─┘                     ├─ Zod 입력 검증
 
 ### 화면 / 인터페이스 설계
 
-<!-- Figma 링크, 화면 이미지, CLI 사용 예시, 앱 화면 등 -->
-- 웹: 로그인, 홈, 글감함, 글감 작성·상세·수정, 프로젝트 목록·상세, 원고 편집, 프로필, 설정
-- 모바일: 로그인, 최근 글감, 조각글·사진·동영상·링크 작성, 글감 상세, 글감 서핑, 프로필
-- 글감 서핑은 Pinterest처럼 다른 사용자가 공유한 글감을 카드형으로만 보여주며, 텍스트 검색과 상세 모달을 제공한다.
-- 공유 글감 상세에서는 내 글감함에 추가하거나 부적절한 글감으로 신고할 수 있다.
-- 프로젝트 목록은 `진행 중`과 `완료` 섹션으로 구분한다.
-- 프로젝트 상태는 정보 수정 모달이 아닌 별도 `완료하기` / `다시 진행하기` 버튼으로 변경한다.
-- 프로젝트 글감 연결 모달과 원고 편집 패널은 사용자의 모든 글감을 검색한다.
-- 완료 프로젝트에서만 PDF·DOCX·TXT 다운로드 메뉴를 표시한다.
-- 모바일 동기화와 원고 자동 저장은 항상 켜져 있으므로 설정 항목을 제공하지 않는다.
+#### IA 구조
+
+```text
+Nook
+├─ 인증
+│  ├─ 로그인
+│  └─ 세션 유지 / 로그아웃 / 회원 탈퇴
+├─ 홈
+│  ├─ 최근 글감
+│  ├─ 진행 중 프로젝트 요약
+│  └─ 알림 팝업
+├─ 글감함
+│  ├─ 글감 목록
+│  │  ├─ 리스트 보기
+│  │  └─ 카드 보기
+│  ├─ 글감 추가
+│  │  ├─ 조각글
+│  │  ├─ 사진
+│  │  ├─ 동영상
+│  │  └─ 링크
+│  ├─ 글감 상세 / 수정
+│  └─ 태그 생성 / 삭제
+├─ 글감 서핑
+│  ├─ 공유 글감 카드 검색
+│  ├─ 공유 글감 상세 모달
+│  ├─ 내 글감함에 추가
+│  └─ 신고
+├─ 프로젝트
+│  ├─ 진행 중
+│  │  ├─ 프로젝트 상세
+│  │  ├─ 글감 연결 / 해제
+│  │  └─ 원고 작성 / 수정
+│  └─ 완료
+│     ├─ 읽기 전용 원고
+│     └─ PDF / DOCX / TXT 내보내기
+├─ 프로필
+│  ├─ 사용자 정보 수정
+│  ├─ 로그아웃
+│  └─ 회원 탈퇴
+└─ 설정
+   ├─ 글감 알림
+   └─ 원고 다크 에디터
+```
+
+#### 플랫폼별 화면
+
+| 플랫폼 | 화면 | 설계 포인트 |
+|---|---|---|
+| Web | 홈, 글감함, 글감 추가/상세/수정, 서핑, 프로젝트 목록/상세, 원고 편집, 프로필, 설정 | 넓은 화면에서 프로젝트와 원고 작업을 중심으로 배치 |
+| Mobile | 홈, 글감 추가, 글감함, 글감 상세/수정, 서핑, 프로젝트, 원고 수정, 프로필 | 빠른 수집과 한 손 조작을 우선, 원고 편집은 전체 폭 중심 |
+| Desktop | Web과 동일 화면 | Electron에서 웹 UI를 그대로 렌더링해 학습 비용 최소화 |
+
+#### 주요 UI 규칙
+
+| 화면/기능 | 규칙 |
+|---|---|
+| 좌측 메뉴 | 웹/데스크탑은 홈, 글감함, 글감 서핑, 프로젝트, 설정을 제공한다. 프로필은 우측 상단 메뉴에서 진입한다. |
+| 글감 연결 | 프로젝트 상세과 원고 수정에서 모든 글감을 검색할 수 있다. 원고 수정은 `이미 연결된 글감`과 `모든 글감` 섹션을 나누고 연결 섹션은 접고 펼친다. |
+| 프로젝트 상태 | `진행 중(active)`과 `완료(done)`만 사용한다. 상태 변경은 프로젝트 수정 폼이 아닌 별도 버튼으로 수행한다. |
+| 완료 프로젝트 | 원고 생성, 글감 추가, 원고 수정은 비활성화하고 내보내기만 허용한다. |
+| 공유 글감 | 서핑 탭은 카드 보기만 지원한다. 상세 모달에서 내 글감함 추가와 신고를 제공한다. |
+| 설정 | 모바일 자동 동기화와 자동 저장은 기본값으로 항상 켜져 있어 설정에서 제거한다. |
+| 톤앤매너 | 따뜻한 갈색 팔레트, 종이 배경, 낮은 대비의 선과 버튼으로 편안한 글쓰기 분위기를 유지한다. |
 
 ### 데이터 구조
 
-> 아래 내용은 실제 마이그레이션(`apps/backend/supabase/migrations/0001~0005`) 기준 현재 스키마다.
+> 아래 내용은 실제 마이그레이션(`apps/backend/supabase/migrations/0001~0005`)과 현재 프론트/API 계약을 기준으로 정리한 스키마다.
 
-```text
-auth.users
-  ├─ profiles (1:1)
-  ├─ user_settings (1:1)
-  ├─ captures
-  │   ├─ capture_assets
-  │   ├─ capture_tags ─ tags
-  │   ├─ shared_capture_saves
-  │   └─ shared_capture_reports
-  │   └─ project_captures ─ projects
-  └─ projects
-      ├─ project_captures ─ captures
-      └─ documents
+#### ERD
+
+```mermaid
+erDiagram
+  AUTH_USERS ||--|| PROFILES : owns
+  AUTH_USERS ||--|| USER_SETTINGS : owns
+  AUTH_USERS ||--o{ CAPTURES : creates
+  AUTH_USERS ||--o{ TAGS : creates
+  AUTH_USERS ||--o{ PROJECTS : creates
+  CAPTURES ||--o{ CAPTURE_ASSETS : has
+  CAPTURES ||--o{ CAPTURE_TAGS : maps
+  TAGS ||--o{ CAPTURE_TAGS : maps
+  PROJECTS ||--o{ PROJECT_CAPTURES : maps
+  CAPTURES ||--o{ PROJECT_CAPTURES : maps
+  PROJECTS ||--o{ DOCUMENTS : contains
+  CAPTURES ||--o{ SHARED_CAPTURE_SAVES : saved
+  CAPTURES ||--o{ SHARED_CAPTURE_REPORTS : reported
 ```
 
-#### 핵심 테이블
+#### DB 스키마
 
-```sql
-create table profiles (
-  id uuid primary key references auth.users (id) on delete cascade,
-  display_name text,
-  avatar_url text,
-  created_at timestamptz not null default now(),
-  notify_enabled boolean not null default true,   
-  dark_editor boolean not null default false       
-);
+| 테이블 | 주요 컬럼 | 관계 | 설명 |
+|---|---|---|---|
+| `profiles` | `id`, `display_name`, `avatar_url`, `notify_enabled`, `dark_editor` | `auth.users` 1:1 | 로그인 계정의 서비스 프로필과 일부 설정 저장 |
+| `user_settings` | `user_id`, `capture_alerts_enabled`, `dark_editor_enabled` | `auth.users` 1:1 | 설정 API용 사용자 환경값 |
+| `captures` | `id`, `user_id`, `type`, `content`, `url`, `link_*`, `is_shared`, `shared_visibility` | 사용자 1:N | 조각글·사진·동영상·링크 글감 본문과 공유 상태 |
+| `capture_assets` | `id`, `capture_id`, `storage_path` | 글감 1:N | 사진/동영상 파일의 Supabase Storage 경로 |
+| `tags` | `id`, `user_id`, `name`, `color` | 사용자 1:N | 사용자별 태그, `(user_id, name)` unique |
+| `capture_tags` | `capture_id`, `tag_id` | 글감 N:M 태그 | 한 글감에 여러 태그 연결, 복합 PK로 중복 방지 |
+| `projects` | `id`, `user_id`, `title`, `description`, `status` | 사용자 1:N | 진행 중/완료 프로젝트 |
+| `project_captures` | `project_id`, `capture_id` | 프로젝트 N:M 글감 | 프로젝트에 사용할 글감 연결 |
+| `documents` | `id`, `project_id`, `user_id`, `title`, `content` | 프로젝트 1:N | 프로젝트 안의 여러 원고 |
+| `shared_capture_saves` | `capture_id`, `user_id`, `created_at` | 공유 글감 N:M 저장 사용자 | 다른 사용자가 공유 글감을 내 글감함에 담은 기록 |
+| `shared_capture_reports` | `id`, `capture_id`, `reporter_id`, `reason` | 공유 글감 N:M 신고 사용자 | 중복 신고 방지, 누적 시 노출 제한 |
 
-create table public.user_settings (
-  user_id uuid primary key references auth.users (id) on delete cascade,
-  capture_alerts_enabled boolean not null default true,
-  dark_editor_enabled boolean not null default false,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+#### 상태·제약 조건
 
-create table captures (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  type text not null check (type in ('text', 'photo', 'link', 'video')),
-  content text,
-  url text,
-  link_title text,
-  link_description text,
-  link_image_url text,
-  is_shared boolean not null default false,
-  shared_visibility text not null default 'visible'
-    check (shared_visibility in ('visible', 'limited')),
-  shared_limited_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table shared_capture_saves (
-  capture_id uuid not null references captures (id) on delete cascade,
-  user_id uuid not null references auth.users (id) on delete cascade,
-  created_at timestamptz not null default now(),
-  primary key (capture_id, user_id)
-);
-
-create table shared_capture_reports (
-  id uuid primary key default gen_random_uuid(),
-  capture_id uuid not null references captures (id) on delete cascade,
-  reporter_id uuid not null references auth.users (id) on delete cascade,
-  reason text,
-  created_at timestamptz not null default now(),
-  unique (capture_id, reporter_id)
-);
-
-create table capture_assets (
-  id uuid primary key default gen_random_uuid(),
-  capture_id uuid not null references captures (id) on delete cascade,
-  storage_path text not null,
-  created_at timestamptz not null default now()
-);
-
-create table tags (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  name text not null,
-  color text,
-  created_at timestamptz not null default now(),
-  unique (user_id, name)
-);
-
-create table capture_tags (
-  capture_id uuid not null references captures (id) on delete cascade,
-  tag_id uuid not null references tags (id) on delete cascade,
-  created_at timestamptz not null default now(),
-  primary key (capture_id, tag_id)
-);
-
-create table projects (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  title text not null,
-  description text,
-  status text not null default 'active' check (status in ('active', 'done')),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table project_captures (
-  project_id uuid not null references projects (id) on delete cascade,
-  capture_id uuid not null references captures (id) on delete cascade,
-  created_at timestamptz not null default now(),
-  primary key (project_id, capture_id)
-);
-
-create table documents (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references projects (id) on delete cascade,
-  user_id uuid not null references auth.users (id) on delete cascade,
-  title text not null default '제목 없음',
-  content text not null default '',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-```
+| 대상 | 규칙 |
+|---|---|
+| 글감 타입 | `text`, `photo`, `link`, `video`만 허용 |
+| 프로젝트 상태 | `active`, `done`만 허용. `archived`는 사용하지 않음 |
+| 공유 노출 상태 | `visible`, `limited`만 허용. 신고 누적 시 `limited`로 변경 |
+| 태그 중복 | 같은 사용자는 같은 이름의 태그를 중복 생성할 수 없음 |
+| 글감-태그 연결 | `(capture_id, tag_id)` 복합 PK로 중복 연결 방지 |
+| 프로젝트-글감 연결 | `(project_id, capture_id)` 복합 PK로 중복 연결 방지 |
+| 원고 생성 멱등성 | 프론트는 중복 클릭을 막지만 서버 `clientRequestId` 기반 멱등 처리는 TODO |
 
 #### 데이터 규칙
 
-- `profiles.id = auth.users.id`이며 가입 트리거가 Google 이름과 프로필 사진을 초기화한다. 이메일·로그인 provider는 저장하지 않고 `GET/PATCH/DELETE /me`에서 Supabase Auth Admin API(`auth.admin.getUserById`) 결과와 조합해서 내려준다.
-- 알림·다크 에디터 설정은 별도 테이블이 아니라 `profiles.notify_enabled` / `profiles.dark_editor` 컬럼에 저장하고, `/settings`(camelCase: `captureAlertsEnabled`, `darkEditorEnabled`)로만 노출한다. 모바일 동기화와 자동 저장은 끌 수 있는 컬럼 자체를 두지 않아 항상 켜져 있다.
-- 링크 글감의 사용자 메모는 `captures.content`, 외부 페이지 설명은 `link_description`에 저장한다. 미리보기는 생성 시 최초 한 번, 그리고 수정 요청의 `url`이 저장된 값과 다를 때만 다시 가져와 갱신한다(변경 없으면 재크롤링하지 않음).
-- 한 글감에는 여러 태그를 연결할 수 있다. `(user_id, name)`과 `(capture_id, tag_id)` 고유 제약으로 중복을 막으며, 글감 생성·수정 요청의 `tagIds`는 해당 글감의 태그 목록을 통째로 교체하는 방식으로 동작한다(부분 추가/삭제 아님).
-- 프로젝트 상태는 `active`, `done`만 사용한다. `archived`는 제거했고, 기존에 `archived`였던 로우는 마이그레이션에서 `done`으로 이관했다.
-- 글감은 생성·수정 시 `isShared`로 공유 여부를 설정한다. 공유 글감만 `/shared-captures`에 노출되며, 신고가 기준치 이상 누적되면 `shared_visibility='limited'`로 전환되어 서핑 목록에서 제외된다.
-- 다른 사용자가 공유 글감을 내 글감함에 추가하면 원본 생성자에게 알림이 생성된다. 공유 글감을 신고하거나 신고 누적으로 노출 제한이 걸린 경우에도 생성자에게 알림이 간다. 알림 테이블·실시간 전달은 백엔드 TODO다.
-- `documents.user_id`는 매 요청마다 `projects`를 조회해 소유권을 확인하던 이중 쿼리를 없애기 위해 비정규화한 컬럼이다(자동 저장처럼 자주 호출되는 경로의 지연을 줄이는 목적).
-- **알려진 한계:** 프론트는 원고 생성 시 `clientRequestId`를 함께 보내지만, 서버는 아직 이 값으로 중복 생성을 막지 않는다. 현재는 프론트가 요청 중 버튼을 비활성화하는 것으로만 완화되어 있고(같은 탭 연타는 막지만 네트워크 재시도·다중 탭까지는 못 막음), 서버 측 멱등 처리는 TODO로 남아 있다.
-- `profiles`, `captures`, `tags`, `projects`, `documents`는 직접 소유자 기준 RLS를 사용한다. 연결 테이블은 부모 글감 또는 프로젝트의 소유권을 검사한다. API 서버는 service-role 키로 RLS를 우회하므로, 실제 소유권 검증은 각 repository 함수가 쿼리에 `user_id`/`project_id` 필터를 직접 거는 방식으로 이루어진다.
+- `profiles.id = auth.users.id`이며 가입 트리거가 Google 이름과 프로필 사진을 초기화한다.
+- 이메일·로그인 provider는 DB에 저장하지 않고 `/me` 응답에서 Supabase Auth Admin API 결과와 조합한다.
+- 링크 글감의 사용자 메모는 `captures.content`, 외부 페이지 설명은 `link_description`에 저장한다.
+- 링크 미리보기는 생성 시 최초 한 번, 수정 요청에서 `url`이 바뀐 경우에만 다시 가져온다.
+- 글감 생성·수정 요청의 `tagIds`는 해당 글감의 태그 목록을 통째로 교체한다.
+- 공유 글감만 `/shared-captures`에 노출되며, `shared_visibility='limited'`인 글감은 목록에서 제외된다.
+- 다른 사용자가 공유 글감을 저장하거나 신고한 경우 원본 생성자에게 알림이 가야 한다. 알림 테이블·실시간 전달은 백엔드 TODO다.
+- `documents.user_id`는 자동 저장처럼 자주 호출되는 경로의 소유권 검증 비용을 줄이기 위해 둔 비정규화 컬럼이다.
+- API 서버는 service-role 키로 RLS를 우회할 수 있으므로 repository 함수에서 `user_id`/`project_id` 필터를 직접 강제한다.
 
 #### 공통 글감 응답 포맷
 
-`/captures`, `/captures/:id`, `/projects/:id/captures`는 모두 동일한 형태로 통일되어 있다(글감이 화면마다 다른 모양으로 오는 문제 방지). 필드명은 스펙 초안의 camelCase 대신 프론트가 실제로 구현된 **snake_case 계약**을 그대로 따른다.
+`/captures`, `/captures/:id`, `/projects/:id/captures`는 화면마다 포맷이 깨지지 않도록 동일한 글감 응답을 사용한다. 필드명은 현재 프론트가 구현한 **snake_case 계약**을 따른다.
 
 ```ts
 interface ApiCapture {
@@ -260,12 +327,12 @@ interface ApiCapture {
   url: string | null;
   link_title: string | null;
   link_description: string | null;
-  link_image_url: string | null;   // 외부 링크 미리보기 이미지
-  image_url: string | null;         // 사진 글감이 Storage에 올린 파일의 서명된 URL (1시간 유효)
+  link_image_url: string | null;
+  image_url: string | null;
   tags: Array<{ id: string; name: string; color: string | null }>;
   is_shared?: boolean;
   shared_visibility?: 'visible' | 'limited';
-  isLinked?: boolean;               // 아직 서버에서 채우지 않음 — 프론트가 별도로 계산
+  isLinked?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -273,36 +340,38 @@ interface ApiCapture {
 
 ### API / 외부 서비스 연동
 
-모든 엔드포인트는 `Authorization: Bearer <supabase_access_token>`을 사용한다. 오류 응답은 `{ "error": { "message", "details" } }` 형식이다
+모든 엔드포인트는 `Authorization: Bearer <supabase_access_token>`을 사용한다. 오류 응답은 `{ "error": { "message", "details" } }` 형식이다.
 
-| Method / 방식 | Endpoint / 서비스 | 설명 | 요청 | 응답 | 비고 |
-|---|---|---|---|---|---|
-| GET | `/me` | Auth 계정·프로필·설정 결합 조회 | - | 사용자(+`settings`) | `email`/`provider`는 Auth Admin API에서 조합 |
-| PATCH | `/me` | 이름·프로필 사진 수정 | `displayName`, `avatarUrl` | 사용자 | 이메일 변경 불가 |
-| DELETE | `/me` | 계정 삭제 | - | `204` | `auth.users` 삭제로 전 데이터 cascade + Storage 파일 정리 |
-| GET/PATCH | `/settings` | 알림·다크 에디터 설정 조회·저장 | `captureAlertsEnabled`, `darkEditorEnabled` | 설정 | `/me`와 별도 리소스로 분리 |
-| GET | `/captures` | 내 글감 목록 | `type` | `ApiCapture[]` | `q`/`tagIds`/`projectId`/`cursor`는 아직 미구현 — 프론트가 전체 목록을 받아 클라이언트에서 검색·필터링 |
-| POST | `/captures` | 글감과 태그 동시 생성 | `type`, `content`, `url`, `tagIds`, `isShared` | `ApiCapture` | 링크는 미리보기 자동 조회 |
-| GET | `/captures/:id` | 글감 상세 조회 | - | `ApiCapture` | |
-| PATCH | `/captures/:id` | 글감·태그·공유 여부 수정 | `content`, `url`, `tagIds`, `isShared` | `ApiCapture` | `url` 변경 시에만 미리보기 재조회 |
-| DELETE | `/captures/:id` | 글감 삭제 | - | `204` | 자산·태그 연결 cascade |
-| GET | `/shared-captures` | 공유 글감 서핑 목록 | `q`, `cursor` | `ApiSharedCapture[]` | `is_shared=true`, `shared_visibility='visible'`만 노출 |
-| POST | `/shared-captures/:id/save` | 공유 글감을 내 글감함에 추가 | - | `ApiCapture` 또는 `204` | 원본 생성자에게 저장 알림 생성 |
-| POST | `/shared-captures/:id/report` | 공유 글감 신고 | `reason` | `204` | 중복 신고 방지, 누적 기준 초과 시 노출 제한 및 알림 |
-| POST | `/captures/:id/assets/upload-url` | 사진 업로드 URL 발급 | 파일명·MIME | signed URL | |
-| POST | `/captures/:id/assets/complete` | 업로드 완료 기록 | storage path | asset | |
-| GET/POST | `/tags` | 내 태그 목록·생성 | `name`, `color` | 태그 | |
-| DELETE | `/tags/:id` | 태그 삭제 | - | `204` | 연결 자동 해제 |
-| POST/DELETE | `/captures/:id/tags[...]` | 태그 개별 연결·해제 | `tagId` | `204` | 생성/수정 시 `tagIds`를 쓰면 보통 직접 호출할 필요 없음 |
-| POST | `/link-preview` | 외부 링크 정보 추출 | `url` | 제목·설명·이미지 | |
-| GET/POST | `/projects` | 목록·생성 | 프로젝트 정보 | 프로젝트 | `status` 쿼리 필터는 미구현 — 프론트가 전체를 받아 진행중/완료로 분리 표시 |
-| GET/PATCH/DELETE | `/projects/:id` | 상세·이름/설명 수정·삭제 | `title`, `description` | 프로젝트 | 상태 변경 불가 |
-| PATCH | `/projects/:id/status` | 전용 버튼으로 상태 전환 | `status`: `active`\|`done` | 프로젝트 | 일반 수정과 분리된 전용 엔드포인트 |
-| GET | `/projects/:id/captures` | 연결 글감 조회 | - | `ApiCapture[]` | `/captures`와 동일 포맷으로 통일 |
-| POST/DELETE | `/projects/:id/captures[...]` | 글감 연결·해제 | `captureId` | `204` | 복합 PK로 중복 방지 |
-| GET/POST | `/projects/:id/documents` | 원고 목록·생성 | 제목·본문(+`clientRequestId`, 현재 무시됨) | 원고 | 서버 측 중복 생성 방지는 TODO |
-| GET/PATCH/DELETE | `/projects/:id/documents/:documentId` | 원고 조회·자동 저장·삭제 | 제목·본문 | 원고 또는 `204` | `title`은 빈 문자열 허용(자동 저장 중 제목을 잠깐 지운 상태도 유효) |
-| GET | `/projects/:id/export?format=pdf\|docx\|txt` | 완료 프로젝트 내보내기 | format | 파일 stream | `done` 상태가 아니면 403 |
+#### API 요약
+
+| 리소스 | Method | Endpoint | 설명 | 비고 |
+|---|---|---|---|---|
+| 사용자 | GET | `/me` | Auth 계정·프로필·설정 결합 조회 | 이메일/provider는 Auth Admin API에서 조합 |
+| 사용자 | PATCH | `/me` | 이름·프로필 사진 수정 | `displayName`, `avatarUrl` |
+| 사용자 | DELETE | `/me` | 계정 삭제 | Auth 사용자 삭제 후 데이터 cascade |
+| 설정 | GET/PATCH | `/settings` | 알림·다크 에디터 설정 조회/저장 | 모바일 동기화·자동 저장 설정은 없음 |
+| 글감 | GET | `/captures` | 내 글감 목록 | 타입 필터 일부 지원, 검색은 프론트 필터 중심 |
+| 글감 | POST | `/captures` | 글감과 태그 동시 생성 | `type`, `content`, `url`, `tagIds`, `isShared` |
+| 글감 | GET | `/captures/:id` | 글감 상세 조회 | 공통 글감 포맷 |
+| 글감 | PATCH | `/captures/:id` | 글감·태그·공유 여부 수정 | URL 변경 시 링크 미리보기 재조회 |
+| 글감 | DELETE | `/captures/:id` | 글감 삭제 | 자산·태그 연결 cascade |
+| 공유 글감 | GET | `/shared-captures` | 공유 글감 서핑 목록 | `q`, `cursor` |
+| 공유 글감 | POST | `/shared-captures/:id/save` | 공유 글감을 내 글감함에 추가 | 생성자 알림 TODO |
+| 공유 글감 | POST | `/shared-captures/:id/report` | 공유 글감 신고 | 중복 신고 방지, 노출 제한 |
+| 파일 | POST | `/captures/:id/assets/upload-url` | 업로드 signed URL 발급 | 사진/동영상 |
+| 파일 | POST | `/captures/:id/assets/complete` | 업로드 완료 기록 | Storage path 저장 |
+| 태그 | GET/POST | `/tags` | 태그 목록·생성 | 사용자별 unique name |
+| 태그 | DELETE | `/tags/:id` | 태그 삭제 | 연결 자동 해제 |
+| 태그 | POST/DELETE | `/captures/:id/tags[...]` | 태그 개별 연결·해제 | 일반적으로 `tagIds` 사용 |
+| 링크 | POST | `/link-preview` | 외부 링크 정보 추출 | 제목·설명·이미지 |
+| 프로젝트 | GET/POST | `/projects` | 프로젝트 목록·생성 | 프론트가 진행중/완료 섹션 분리 |
+| 프로젝트 | GET/PATCH/DELETE | `/projects/:id` | 상세·이름/설명 수정·삭제 | 상태 변경은 별도 endpoint |
+| 프로젝트 | PATCH | `/projects/:id/status` | 진행중/완료 전환 | `active` 또는 `done` |
+| 프로젝트 글감 | GET | `/projects/:id/captures` | 연결 글감 조회 | 공통 글감 포맷 |
+| 프로젝트 글감 | POST/DELETE | `/projects/:id/captures[...]` | 글감 연결·해제 | 복합 PK로 중복 방지 |
+| 원고 | GET/POST | `/projects/:id/documents` | 원고 목록·생성 | `clientRequestId` 멱등 TODO |
+| 원고 | GET/PATCH/DELETE | `/projects/:id/documents/:documentId` | 원고 조회·자동 저장·삭제 | 빈 제목 허용 |
+| 내보내기 | GET | `/projects/:id/export?format=pdf\|docx\|txt` | 완료 프로젝트 파일 다운로드 | `done`이 아니면 403 |
 
 #### 주요 요청 계약
 
@@ -313,20 +382,10 @@ interface ApiCapture {
   "type": "link",
   "content": "사용자가 직접 작성한 메모",
   "url": "https://example.com/article",
-  "tagIds": ["tag-uuid-1", "tag-uuid-2"]
+  "tagIds": ["tag-uuid-1", "tag-uuid-2"],
+  "isShared": true
 }
 ```
-
-```json
-{
-  "type": "link",
-  "content": "사용자가 직접 작성한 메모",
-  "url": "https://example.com/article",
-  "tagIds": ["tag-uuid-1", "tag-uuid-2"]
-}
-```
-
-`tagIds`는 해당 글감의 태그 목록을 이 배열로 완전히 교체한다(생성 시 생략하거나 빈 배열이면 태그 없음).
 
 프로젝트 상태 전환:
 
@@ -334,15 +393,20 @@ interface ApiCapture {
 { "status": "done" }
 ```
 
-허용 전이는 `active ↔ done`뿐이다. 완료 프로젝트만 PDF·DOCX·TXT로 내보낼 수 있으며, 내보내기는 프로젝트의 원고를 목록 순서대로 합친다.
+데스크탑 환경 변수:
+
+| 변수 | 설명 | 예시 |
+|---|---|---|
+| `NOOK_WEB_APP_URL` | 개발 모드에서 Electron이 로드할 웹 앱 주소 | `http://localhost:3000` |
+| `NOOK_BACKEND_URL` | 웹 UI와 preload가 사용할 API 서버 주소 | `https://nook.madcamp-kaist.org/api/v1` |
 
 ---
 
 ## 산출물 및 실행 방법
 
-- **산출물 설명:** 웹과 모바일에서 글감을 수집하고 웹에서 프로젝트·복수 원고로 발전시키는 Nook 프로토타입
-- **실행 환경:** Node.js, 웹 브라우저, Flutter 지원 Android/iOS 기기 또는 에뮬레이터
-- **실행 방법:** 각 앱의 환경 변수를 구성하고 backend, web, mobile을 순서대로 실행
+- **산출물 설명:** 웹, 모바일, 데스크탑에서 글감을 수집하고 프로젝트·복수 원고로 발전시키는 Nook 프로토타입
+- **실행 환경:** Node.js, 웹 브라우저, Flutter 지원 Android/iOS 기기 또는 에뮬레이터, Windows 데스크탑 앱
+- **실행 방법:** 각 앱의 환경 변수를 구성하고 backend, web, mobile, desktop을 목적에 맞게 실행
 - **시연 영상 / 이미지:** (추후 추가)
 
 ### 실행 방법
@@ -365,17 +429,31 @@ cd apps/mobile
 cp .env.example .env
 flutter pub get
 flutter run
+
+# Desktop (Electron 개발 모드)
+cd apps/desktop
+cp .env.example .env.local
+npm install
+npm run dev
+
+# Desktop 배포 빌드
+cd apps/desktop
+npm run dist
 ```
 
-### 기술 구성
+### 기술 스택
 
 | 분류 | 사용 기술 |
 |---|---|
-| 핵심 기술 | Cross-Platform 웹·모바일 데이터 연동 |
-| 실행 환경 | Next.js, Flutter, Node.js Express |
+| 핵심 기술 | Cross-Platform 웹·모바일·데스크탑 데이터 연동 |
+| Web | Next.js, TypeScript, CSS |
+| Mobile | Flutter, Dart, Supabase Flutter |
+| Desktop | Electron, bundled Next server, local offline queue |
+| Backend | Node.js, Express, Zod |
 | 데이터 저장 | Supabase PostgreSQL, Storage, Row Level Security |
-| 외부 API / 서비스 | Supabase Auth, 링크 미리보기 대상 웹 페이지 |
-| 기타 | TypeScript, Zod, PDF·DOCX·TXT 생성 라이브러리 |
+| 인증 | Supabase Auth, Bearer access token |
+| 외부 API / 서비스 | 링크 미리보기 대상 웹 페이지, Supabase Storage signed URL |
+| 기타 | PDF·DOCX·TXT 생성 라이브러리, Mermaid 문서화 |
 
 ---
 
