@@ -4,13 +4,13 @@ abstract final class AppTheme {
   static const cream = Color(0xFFF8F3EA);
   static const paper = Color(0xFFFFFCF6);
   static const ink = Color(0xFF2E2721);
-  static const sage = Color(0xFF8C6F55);
-  static const moss = Color(0xFF6F4E37);
+  static const sage = Color(0xFF9A7B62);
+  static const moss = Color(0xFF85644E);
   static const clay = Color(0xFFC58E63);
   static const mist = Color(0xFFF1E5D6);
   static const line = Color(0xFFE6D7C5);
   static const muted = Color(0xFF8B7A6B);
-  static const coffee = Color(0xFF4B3428);
+  static const coffee = Color(0xFF624A3A);
   static const night = Color(0xFF17110D);
   static const darkPaper = Color(0xFF241A14);
   static const darkMist = Color(0xFF33261E);
@@ -121,5 +121,4 @@ abstract final class AppTheme {
           ),
         ),
       );
-
 }

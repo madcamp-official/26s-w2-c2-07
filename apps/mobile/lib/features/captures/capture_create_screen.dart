@@ -168,29 +168,12 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 20),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(
-                  value: 'text',
-                  icon: Icon(Icons.short_text),
-                  label: Text('글')),
-              ButtonSegment(
-                  value: 'photo',
-                  icon: Icon(Icons.photo_camera_outlined),
-                  label: Text('사진')),
-              ButtonSegment(
-                  value: 'video',
-                  icon: Icon(Icons.videocam_outlined),
-                  label: Text('동영상')),
-              ButtonSegment(
-                  value: 'link', icon: Icon(Icons.link), label: Text('링크')),
-            ],
-            selected: {type},
-            onSelectionChanged: (value) =>
-                setState(() {
-                  type = value.first;
-                  pickedFile = null;
-                }),
+          _CaptureTypeSelector(
+            selectedType: type,
+            onChanged: (value) => setState(() {
+              type = value;
+              pickedFile = null;
+            }),
           ),
           const SizedBox(height: 20),
           if (type == 'link')
@@ -287,4 +270,114 @@ class _CaptureCreateScreenState extends State<CaptureCreateScreen> {
       ),
     );
   }
+}
+
+class _CaptureTypeSelector extends StatelessWidget {
+  const _CaptureTypeSelector({
+    required this.selectedType,
+    required this.onChanged,
+  });
+
+  final String selectedType;
+  final ValueChanged<String> onChanged;
+
+  static const _items = [
+    _CaptureTypeOption('text', Icons.short_text, '글'),
+    _CaptureTypeOption('photo', Icons.photo_camera_outlined, '사진'),
+    _CaptureTypeOption('video', Icons.videocam_outlined, '동영상'),
+    _CaptureTypeOption('link', Icons.link, '링크'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppTheme.paper,
+        border: Border.all(color: AppTheme.line),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(17),
+        child: Row(
+          children: [
+            for (var index = 0; index < _items.length; index++) ...[
+              Expanded(
+                child: _CaptureTypeButton(
+                  option: _items[index],
+                  isSelected: selectedType == _items[index].value,
+                  onTap: () => onChanged(_items[index].value),
+                ),
+              ),
+              if (index != _items.length - 1)
+                const SizedBox(
+                  height: 42,
+                  child: VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: AppTheme.line,
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CaptureTypeButton extends StatelessWidget {
+  const _CaptureTypeButton({
+    required this.option,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final _CaptureTypeOption option;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isSelected ? AppTheme.coffee : AppTheme.muted;
+
+    return InkWell(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+        color: isSelected ? AppTheme.mist : Colors.transparent,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(option.icon, size: 18, color: color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                option.label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.visible,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  letterSpacing: -0.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CaptureTypeOption {
+  const _CaptureTypeOption(this.value, this.icon, this.label);
+
+  final String value;
+  final IconData icon;
+  final String label;
 }

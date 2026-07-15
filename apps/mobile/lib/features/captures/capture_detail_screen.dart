@@ -167,9 +167,12 @@ class _CaptureDetailScreenState extends State<CaptureDetailScreen> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 16),
-              Chip(
-                avatar: Icon(captureTypeIcon(item.type), size: 18),
-                label: Text(captureTypeLabel(item.type)),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Chip(
+                  avatar: Icon(captureTypeIcon(item.type), size: 18),
+                  label: Text(captureTypeLabel(item.type)),
+                ),
               ),
               const SizedBox(height: 16),
               if (item.type == CaptureType.photo ||
