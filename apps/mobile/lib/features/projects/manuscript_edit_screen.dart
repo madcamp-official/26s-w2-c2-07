@@ -123,8 +123,9 @@ class _ManuscriptEditScreenState extends State<ManuscriptEditScreen> {
 
     setState(() => isSaving = true);
     try {
-      final title =
-          titleController.text.trim().isEmpty ? '제목 없음' : titleController.text.trim();
+      final title = titleController.text.trim().isEmpty
+          ? '제목 없음'
+          : titleController.text.trim();
       if (documentId == null) {
         final created = await _documentsRepository.create(
           widget.projectId,
@@ -240,61 +241,62 @@ class _ManuscriptEditScreenState extends State<ManuscriptEditScreen> {
                     ],
                   ),
                 )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+              : Stack(
                   children: [
-                    if (isProjectCompleted)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Card(
-                          color: AppTheme.mist,
-                          child: const ListTile(
-                            leading: Icon(Icons.lock_outline),
-                            title: Text('완료된 프로젝트'),
-                            subtitle: Text('완료된 프로젝트의 원고는 읽기만 가능해요.'),
-                          ),
-                        ),
-                      ),
-                    Stack(
-                      clipBehavior: Clip.none,
+                    ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 34, 28),
                       children: [
+                        if (isProjectCompleted)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Card(
+                              color: AppTheme.mist,
+                              child: const ListTile(
+                                leading: Icon(Icons.lock_outline),
+                                title: Text('완료된 프로젝트'),
+                                subtitle: Text('완료된 프로젝트의 원고는 읽기만 가능해요.'),
+                              ),
+                            ),
+                          ),
                         _ManuscriptPaper(
                           titleController: titleController,
                           bodyController: bodyController,
                           isReadOnly: isProjectCompleted,
                           useDarkEditor: useDarkEditor,
                         ),
-                        Positioned(
-                          top: -10,
-                          right: 22,
-                          child: _CaptureBookmarkTab(
-                            isDisabled: isProjectCompleted,
-                            onTap: openCaptureConnector,
-                          ),
+                        const SizedBox(height: 18),
+                        FilledButton.icon(
+                          onPressed: isSaving || isProjectCompleted
+                              ? null
+                              : saveManuscript,
+                          icon: isSaving
+                              ? const SizedBox(
+                                  height: 16,
+                                  width: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.check),
+                          label: const Text('저장'),
                         ),
+                        if (documentId != null)
+                          TextButton.icon(
+                            onPressed: isDeleting || isProjectCompleted
+                                ? null
+                                : deleteManuscript,
+                            icon: const Icon(Icons.delete_outline),
+                            label: const Text('원고 삭제'),
+                          ),
                       ],
                     ),
-                    const SizedBox(height: 18),
-                    FilledButton.icon(
-                      onPressed:
-                          isSaving || isProjectCompleted ? null : saveManuscript,
-                      icon: isSaving
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.check),
-                      label: const Text('저장'),
-                    ),
-                    if (documentId != null)
-                      TextButton.icon(
-                        onPressed: isDeleting || isProjectCompleted
-                            ? null
-                            : deleteManuscript,
-                        icon: const Icon(Icons.delete_outline),
-                        label: const Text('원고 삭제'),
+                    Positioned(
+                      top: 92,
+                      right: 0,
+                      child: _CaptureBookmarkTab(
+                        isDisabled: isProjectCompleted,
+                        onTap: openCaptureConnector,
                       ),
+                    ),
                   ],
                 ),
     );
@@ -337,7 +339,8 @@ class _ManuscriptPaper extends StatelessWidget {
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.coffee.withValues(alpha: useDarkEditor ? 0.18 : 0.06),
+            color:
+                AppTheme.coffee.withValues(alpha: useDarkEditor ? 0.18 : 0.06),
             blurRadius: 22,
             offset: const Offset(0, 12),
           ),
@@ -391,24 +394,20 @@ class _CaptureBookmarkTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: isDisabled ? AppTheme.muted : AppTheme.coffee,
-      borderRadius: const BorderRadius.vertical(
-        top: Radius.circular(16),
-        bottom: Radius.circular(8),
-      ),
-      elevation: 4,
+      borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
+      elevation: 6,
       child: InkWell(
         onTap: isDisabled ? null : onTap,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(16),
-          bottom: Radius.circular(8),
-        ),
+        borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
         child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 18),
           child: Text(
-            '글감 연결',
+            '글감\n연결',
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
+              height: 1.15,
               letterSpacing: -0.2,
             ),
           ),
@@ -437,6 +436,7 @@ class _CaptureConnectorPanelState extends State<_CaptureConnectorPanel> {
 
   String query = '';
   bool isLoading = true;
+  bool isLinkedExpanded = true;
   Object? loadError;
   List<Capture> allCaptures = [];
   Set<String> linkedIds = {};
@@ -469,6 +469,10 @@ class _CaptureConnectorPanelState extends State<_CaptureConnectorPanel> {
       });
     }
   }
+
+  List<Capture> get linkedCaptures => filteredCaptures
+      .where((capture) => linkedIds.contains(capture.id))
+      .toList();
 
   List<Capture> get filteredCaptures {
     final text = query.trim();
@@ -573,12 +577,45 @@ class _CaptureConnectorPanelState extends State<_CaptureConnectorPanel> {
                           Expanded(
                             child: ListView(
                               children: [
-                                for (final capture in filteredCaptures)
-                                  _ConnectorCaptureTile(
-                                    capture: capture,
-                                    isLinked: linkedIds.contains(capture.id),
-                                    onTap: () => openDetail(capture),
+                                _LinkedCaptureSection(
+                                  captures: linkedCaptures,
+                                  isExpanded: isLinkedExpanded,
+                                  onToggle: () => setState(
+                                    () => isLinkedExpanded = !isLinkedExpanded,
                                   ),
+                                  onOpen: openDetail,
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '모든 글감',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${filteredCaptures.length}개',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(color: AppTheme.muted),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                if (filteredCaptures.isEmpty)
+                                  const _ConnectorEmpty(
+                                    message: '검색 조건에 맞는 글감이 없어요.',
+                                  )
+                                else
+                                  for (final capture in filteredCaptures)
+                                    _ConnectorCaptureTile(
+                                      capture: capture,
+                                      isLinked: linkedIds.contains(capture.id),
+                                      onTap: () => openDetail(capture),
+                                    ),
                               ],
                             ),
                           ),
@@ -607,6 +644,107 @@ class _ConnectorError extends StatelessWidget {
           const SizedBox(height: 8),
           OutlinedButton(onPressed: onRetry, child: const Text('다시 시도')),
         ],
+      ),
+    );
+  }
+}
+
+class _LinkedCaptureSection extends StatelessWidget {
+  const _LinkedCaptureSection({
+    required this.captures,
+    required this.isExpanded,
+    required this.onToggle,
+    required this.onOpen,
+  });
+
+  final List<Capture> captures;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+  final ValueChanged<Capture> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                AnimatedRotation(
+                  turns: isExpanded ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  child: const Icon(Icons.chevron_right),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '이미 연결된 글감',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const Spacer(),
+                Text(
+                  '${captures.length}개',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: AppTheme.muted),
+                ),
+              ],
+            ),
+          ),
+        ),
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: captures.isEmpty
+              ? const _ConnectorEmpty(message: '아직 연결된 글감이 없어요.')
+              : Column(
+                  children: [
+                    for (final capture in captures)
+                      _ConnectorCaptureTile(
+                        capture: capture,
+                        isLinked: true,
+                        onTap: () => onOpen(capture),
+                      ),
+                  ],
+                ),
+          crossFadeState:
+              isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 180),
+          firstCurve: Curves.easeOutCubic,
+          secondCurve: Curves.easeOutCubic,
+        ),
+      ],
+    );
+  }
+}
+
+class _ConnectorEmpty extends StatelessWidget {
+  const _ConnectorEmpty({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppTheme.paper,
+        border: Border.all(color: AppTheme.line),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: Theme.of(context)
+            .textTheme
+            .bodyMedium
+            ?.copyWith(color: AppTheme.muted),
       ),
     );
   }
