@@ -23,7 +23,8 @@ export async function getCapture(req: Request, res: Response) {
 
 export async function createCapture(req: Request, res: Response) {
   const input = createCaptureSchema.parse(req.body);
-  const capture = await capturesService.createCapture(req.user!.id, input);
+  const source = req.header("x-client-source") === "mobile" ? "mobile" : "web";
+  const capture = await capturesService.createCapture(req.user!.id, input, source);
   res.status(201).json(capture);
 }
 

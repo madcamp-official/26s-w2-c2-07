@@ -17,10 +17,19 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import type { ApiProfile } from "../api-types";
-import { notifications } from "../data";
+import type { ApiNotification, ApiProfile } from "../api-types";
 import { readCachedProfile, writeCachedProfile } from "../profile-cache";
 import { supabase } from "../supabase-client";
+
+function timeAgo(iso: string): string {
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (minutes < 1) return "방금 전";
+  if (minutes < 60) return `${minutes}분 전`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "어제" : `${days}일 전`;
+}
 
 const navigation = [
   { href: "/", icon: Home, label: "홈" },
@@ -41,6 +50,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState<string | undefined>();
   const [authChecked, setAuthChecked] = useState(false);
   const [mockMode, setMockMode] = useState(false);
+  const [notifications, setNotifications] = useState<ApiNotification[]>([]);
+
+  const loadNotifications = () => {
+    api
+      .get<ApiNotification[]>("/notifications")
+      .then(setNotifications)
+      .catch(() => undefined);
+  };
+
+  const markAllNotificationsRead = async () => {
+    await api.patch("/notifications/read-all");
+    loadNotifications();
+  };
 
   useEffect(() => {
     const closeOnOutsideClick = (event: MouseEvent) => {
@@ -62,6 +84,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setProfile(readCachedProfile());
   }, []);
+
+  useEffect(() => {
+    if (!email) return;
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 60_000);
+    return () => clearInterval(interval);
+  }, [email]);
 
   useEffect(() => {
     let mounted = true;
@@ -213,7 +242,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-expanded={activePopup === "notifications"}
             >
               <Bell />
-              <span className="unread-dot" />
+              {notifications.some((notification) => !notification.read) && (
+                <span className="unread-dot" />
+              )}
             </button>
             <button
               className="avatar"
@@ -224,7 +255,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {profile?.display_name?.[0] ?? "?"}
             </button>
 
-            {activePopup === "notifications" && <NotificationPopup />}
+            {activePopup === "notifications" && (
+              <NotificationPopup
+                notifications={notifications}
+                onMarkAllRead={markAllNotificationsRead}
+              />
+            )}
             {activePopup === "account" && (
               <AccountPopup
                 profile={profile}
@@ -241,7 +277,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NotificationPopup() {
+function NotificationPopup({
+  notifications,
+  onMarkAllRead,
+}: {
+  notifications: ApiNotification[];
+  onMarkAllRead: () => void;
+}) {
   return (
     <section className="top-popup notification-popup" aria-label="최근 알림">
       <div className="popup-heading">
@@ -249,26 +291,26 @@ function NotificationPopup() {
           <b>최근 알림</b>
           <small>모바일과 웹에서 모은 글감</small>
         </div>
-        <button>모두 읽음</button>
+        <button onClick={onMarkAllRead}>모두 읽음</button>
       </div>
       <div className="notification-list">
         {notifications.map((notification) => (
           <article
             key={notification.id}
-            className={notification.unread ? "unread" : ""}
+            className={notification.read ? "" : "unread"}
           >
             <span className={`source-icon source-${notification.source}`}>
               {notification.source === "mobile" ? "M" : "W"}
             </span>
             <div>
               <b>{notification.title}</b>
-              <p>{notification.detail}</p>
-              <small>{notification.time}</small>
+              {notification.detail && <p>{notification.detail}</p>}
+              <small>{timeAgo(notification.created_at)}</small>
             </div>
           </article>
         ))}
+        {!notifications.length && <p className="notification-empty">아직 알림이 없어요.</p>}
       </div>
-      {/* TODO(backend): 실시간 capture 생성 알림 조회 및 읽음 처리 API와 연결해야 합니다. */}
     </section>
   );
 }

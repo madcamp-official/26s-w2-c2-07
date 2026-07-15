@@ -391,11 +391,11 @@
 }
 
 .status-active i {
-  background: var(--sage);
+  background: #b08a3e;
 }
 
 .status-done i {
-  background: #5f7a5c;
+  background: #4f7a52;
 }
 
 .section-title button:disabled {
@@ -908,6 +908,12 @@
   font-size: 9px;
   color: #777;
   margin: 3px 0;
+}
+.notification-empty {
+  padding: 24px 17px;
+  text-align: center;
+  font-size: 10px;
+  color: #999;
 }
 .notification-list small {
   font-size: 8px;

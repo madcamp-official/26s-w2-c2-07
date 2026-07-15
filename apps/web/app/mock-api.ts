@@ -1,6 +1,7 @@
 import type {
   ApiCapture,
   ApiDocument,
+  ApiNotification,
   ApiProfile,
   ApiProject,
   ApiSettings,
@@ -199,6 +200,26 @@ let profile: ApiProfile = {
   created_at: now,
   settings,
 };
+let notifications: ApiNotification[] = [
+  {
+    id: "notification-1",
+    user_id: userId,
+    source: "mobile",
+    title: "새 사진 글감이 도착했어요",
+    detail: "비 오는 오후의 창가",
+    read: false,
+    created_at: now,
+  },
+  {
+    id: "notification-2",
+    user_id: userId,
+    source: "web",
+    title: "새 글감이 도착했어요",
+    detail: "좋은 문장은 마음을 조용히 움직인다",
+    read: true,
+    created_at: now,
+  },
+];
 
 const id = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 const bodyOf = (options: RequestInit) =>
@@ -232,6 +253,19 @@ export function mockApiResponse<T>(path: string, options: RequestInit = {}): T {
   if (route === "/settings") {
     if (method === "PATCH") settings = { ...settings, ...body };
     return settings as T;
+  }
+  if (route === "/notifications") {
+    return notifications as T;
+  }
+  if (route === "/notifications/read-all" && method === "PATCH") {
+    notifications = notifications.map((notification) => ({ ...notification, read: true }));
+    return undefined as T;
+  }
+  const notificationReadMatch = route.match(/^\/notifications\/([^/]+)\/read$/);
+  if (notificationReadMatch && method === "PATCH") {
+    const notification = notifications.find((item) => item.id === notificationReadMatch[1]);
+    if (notification) notification.read = true;
+    return notification as T;
   }
   if (route === "/tags") {
     if (method === "POST") {

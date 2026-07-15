@@ -102,6 +102,7 @@ class ApiClient {
     final headers = {
       'content-type': 'application/json',
       'authorization': 'Bearer $accessToken',
+      'x-client-source': 'mobile',
     };
     final encodedBody = body == null ? null : jsonEncode(body);
 

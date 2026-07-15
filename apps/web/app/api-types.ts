@@ -77,6 +77,16 @@ export interface ApiSettings {
   darkEditorEnabled: boolean;
 }
 
+export interface ApiNotification {
+  id: string;
+  user_id: string;
+  source: "mobile" | "web";
+  title: string;
+  detail: string | null;
+  read: boolean;
+  created_at: string;
+}
+
 export interface ApiSharedCapture extends ApiCapture {
   creator: {
     id: string;
