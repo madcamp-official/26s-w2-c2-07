@@ -105,11 +105,6 @@ export default function CaptureDetailPage() {
             <time>{captureDate(capture)}</time>
           </div>
           {captureHasTitle(capture) && <h1>{captureTitle(capture)}</h1>}
-          <div className="detail-tags">
-            {capture.tags.map((tag) => (
-              <span key={tag.id}>#{tag.name}</span>
-            ))}
-          </div>
           <CaptureMedia capture={capture} variant="detail" />
           <p className="detail-body">{captureExcerpt(capture)}</p>
           {capture.type === "link" && capture.url && (
@@ -128,12 +123,19 @@ export default function CaptureDetailPage() {
             </a>
           )}
           <div className="detail-actions">
-            <button onClick={() => setEditing(true)}>
-              <Pencil /> 수정
-            </button>
-            <button className="danger" onClick={remove}>
-              <Trash2 /> 삭제
-            </button>
+            <div className="detail-tags">
+              {capture.tags.map((tag) => (
+                <span key={tag.id}>#{tag.name}</span>
+              ))}
+            </div>
+            <div className="detail-action-buttons">
+              <button onClick={() => setEditing(true)}>
+                <Pencil /> 수정
+              </button>
+              <button className="danger" onClick={remove}>
+                <Trash2 /> 삭제
+              </button>
+            </div>
           </div>
         </article>
 

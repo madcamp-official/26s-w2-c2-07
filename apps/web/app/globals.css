@@ -656,7 +656,12 @@ button {
 .detail-actions {
   margin-top: 22px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.detail-action-buttons {
+  display: flex;
   gap: 8px;
 }
 .detail-actions button {

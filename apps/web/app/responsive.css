@@ -433,10 +433,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  margin: 0 0 18px;
-}
-.detail-paper h1 + .detail-tags {
-  margin-top: -12px;
 }
 .project-status-section {
   margin-top: 36px;
