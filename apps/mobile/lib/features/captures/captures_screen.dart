@@ -9,6 +9,7 @@ import '../../data/models/tag.dart';
 import '../../data/repositories/captures_repository.dart';
 import '../../data/repositories/tags_repository.dart';
 import '../../shared/async_state.dart';
+import '../../shared/dialog_actions.dart';
 import '../../shared/main_shell.dart';
 
 class CapturesScreen extends StatefulWidget {
@@ -67,8 +68,8 @@ class _CapturesScreenState extends State<CapturesScreen> {
           capture.displayTitle.contains(text) ||
           captureTypeLabel(capture.type).contains(text) ||
           capture.tags.any((tag) => tag.name.contains(text));
-      final matchesTag =
-          selectedTag == null || capture.tags.any((tag) => tag.name == selectedTag);
+      final matchesTag = selectedTag == null ||
+          capture.tags.any((tag) => tag.name == selectedTag);
       return matchesQuery && matchesTag;
     }).toList();
   }
@@ -85,13 +86,11 @@ class _CapturesScreenState extends State<CapturesScreen> {
           decoration: const InputDecoration(hintText: '새 태그 이름'),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('추가'),
+          DialogActionRow(
+            cancelLabel: '취소',
+            confirmLabel: '추가',
+            onCancel: () => Navigator.of(context).pop(),
+            onConfirm: () => Navigator.of(context).pop(controller.text.trim()),
           ),
         ],
       ),
@@ -119,7 +118,8 @@ class _CapturesScreenState extends State<CapturesScreen> {
     try {
       await _capturesRepository.delete(capture.id);
       if (!mounted) return;
-      setState(() => captures = captures.where((c) => c.id != capture.id).toList());
+      setState(
+          () => captures = captures.where((c) => c.id != capture.id).toList());
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${capture.displayTitle} 글감을 삭제했습니다.')),
       );
@@ -182,8 +182,8 @@ class _CapturesScreenState extends State<CapturesScreen> {
                     label: Text('#${tag.name}'),
                     selected: selectedTag == tag.name,
                     backgroundColor: AppTheme.mist,
-                    onSelected: (selected) =>
-                        setState(() => selectedTag = selected ? tag.name : null),
+                    onSelected: (selected) => setState(
+                        () => selectedTag = selected ? tag.name : null),
                   ),
                 ActionChip(
                   avatar: const Icon(Icons.add, size: 18),
@@ -217,9 +217,11 @@ class _CapturesScreenState extends State<CapturesScreen> {
             else if (items.isEmpty)
               const _EmptyCaptures()
             else if (isCardView)
-              _CaptureCardGrid(items: items, onDelete: deleteCapture, onOpen: openDetail)
+              _CaptureCardGrid(
+                  items: items, onDelete: deleteCapture, onOpen: openDetail)
             else
-              _CaptureList(items: items, onDelete: deleteCapture, onOpen: openDetail),
+              _CaptureList(
+                  items: items, onDelete: deleteCapture, onOpen: openDetail),
           ],
         ),
       ),
@@ -228,7 +230,8 @@ class _CapturesScreenState extends State<CapturesScreen> {
 }
 
 class _CaptureList extends StatelessWidget {
-  const _CaptureList({required this.items, required this.onDelete, required this.onOpen});
+  const _CaptureList(
+      {required this.items, required this.onDelete, required this.onOpen});
 
   final List<Capture> items;
   final ValueChanged<Capture> onDelete;
@@ -269,7 +272,8 @@ class _CaptureList extends StatelessWidget {
 }
 
 class _CaptureCardGrid extends StatelessWidget {
-  const _CaptureCardGrid({required this.items, required this.onDelete, required this.onOpen});
+  const _CaptureCardGrid(
+      {required this.items, required this.onDelete, required this.onOpen});
 
   final List<Capture> items;
   final ValueChanged<Capture> onDelete;
@@ -473,27 +477,11 @@ Future<bool> showConfirmDialog(
           title: Text(title),
           content: Text(message),
           actions: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('취소'),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 40,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      minimumSize: Size.zero,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text('확인'),
-                  ),
-                ),
-              ],
+            DialogActionRow(
+              cancelLabel: '취소',
+              confirmLabel: '확인',
+              onCancel: () => Navigator.of(context).pop(false),
+              onConfirm: () => Navigator.of(context).pop(true),
             ),
           ],
         ),

@@ -8,6 +8,7 @@ import '../../data/models/capture.dart';
 import '../../data/models/shared_capture.dart';
 import '../../data/repositories/shared_captures_repository.dart';
 import '../../shared/async_state.dart';
+import '../../shared/dialog_actions.dart';
 import '../../shared/main_shell.dart';
 
 class SurfScreen extends StatefulWidget {
@@ -93,13 +94,12 @@ class _SurfScreenState extends State<SurfScreen> {
           '여러 신고가 누적되면 노출이 제한됩니다.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('신고'),
+          DialogActionRow(
+            cancelLabel: '취소',
+            confirmLabel: '신고',
+            isDestructive: true,
+            onCancel: () => Navigator.of(context).pop(false),
+            onConfirm: () => Navigator.of(context).pop(true),
           ),
         ],
       ),
@@ -229,7 +229,8 @@ class _SurfScreenState extends State<SurfScreen> {
             else if (_error != null)
               BackendErrorState(
                 title: '공유 글감을 불러오지 못했어요',
-                message: '백엔드의 /shared-captures API와 모바일 .env의 API 주소를 확인해 주세요.',
+                message:
+                    '백엔드의 /shared-captures API와 모바일 .env의 API 주소를 확인해 주세요.',
                 error: _error,
                 onRetry: _load,
               )

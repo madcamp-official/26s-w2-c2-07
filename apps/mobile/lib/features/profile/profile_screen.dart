@@ -10,6 +10,7 @@ import '../../data/repositories/me_repository.dart';
 import '../../data/repositories/memory_cache.dart';
 import '../../data/repositories/projects_repository.dart';
 import '../../data/repositories/settings_repository.dart';
+import '../../shared/dialog_actions.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -110,13 +111,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           decoration: const InputDecoration(labelText: '이름'),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('저장'),
+          DialogActionRow(
+            cancelLabel: '취소',
+            confirmLabel: '저장',
+            onCancel: () => Navigator.of(context).pop(),
+            onConfirm: () => Navigator.of(context).pop(controller.text.trim()),
           ),
         ],
       ),
@@ -141,13 +140,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('로그아웃'),
         content: const Text('현재 계정에서 로그아웃할까요?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('로그아웃'),
+          DialogActionRow(
+            cancelLabel: '취소',
+            confirmLabel: '로그아웃',
+            onCancel: () => Navigator.of(context).pop(false),
+            onConfirm: () => Navigator.of(context).pop(true),
           ),
         ],
       ),
@@ -167,13 +164,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           '계정을 삭제하면 프로필과 개인 데이터가 삭제됩니다. 이 작업은 되돌릴 수 없어요. 정말 탈퇴할까요?',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('탈퇴'),
+          DialogActionRow(
+            cancelLabel: '취소',
+            confirmLabel: '탈퇴',
+            isDestructive: true,
+            onCancel: () => Navigator.of(context).pop(false),
+            onConfirm: () => Navigator.of(context).pop(true),
           ),
         ],
       ),
