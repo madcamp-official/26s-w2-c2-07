@@ -245,9 +245,15 @@ class _CaptureList extends StatelessWidget {
               child: ListTile(
                 onTap: () => onOpen(item),
                 leading: _CaptureBadge(type: item.type),
-                title: Text(item.displayTitle),
+                title: Text(
+                  item.displayTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 subtitle: Text(
                   '${item.tags.isNotEmpty ? '#${item.tags.first.name} · ' : ''}${formatRelativeDate(item.createdAt)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 trailing: IconButton(
                   tooltip: '삭제',
@@ -309,7 +315,7 @@ class _CaptureCardGrid extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     item.displayTitle,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),

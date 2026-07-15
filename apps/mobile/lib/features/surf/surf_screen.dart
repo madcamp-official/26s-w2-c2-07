@@ -141,7 +141,12 @@ class _SurfScreenState extends State<SurfScreen> {
             const SizedBox(height: 8),
             _CapturePreview(capture: capture, height: 220),
             const SizedBox(height: 16),
-            Text(capture.displayTitle, style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              capture.displayTitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 8),
             Text(
               '공유한 사람: ${capture.creator.name} · 저장 ${capture.savedCount}',
@@ -149,7 +154,12 @@ class _SurfScreenState extends State<SurfScreen> {
             ),
             if (capture.content?.trim().isNotEmpty == true) ...[
               const SizedBox(height: 12),
-              Text(capture.content!, style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                capture.content!,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
             ],
             if (capture.url?.trim().isNotEmpty == true) ...[
               const SizedBox(height: 12),

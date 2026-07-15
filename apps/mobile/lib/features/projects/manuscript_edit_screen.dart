@@ -635,9 +635,15 @@ class _ConnectorCaptureTile extends StatelessWidget {
             foregroundColor: AppTheme.moss,
             child: Icon(captureTypeIcon(capture.type)),
           ),
-          title: Text(capture.displayTitle),
+          title: Text(
+            capture.displayTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           subtitle: Text(
             '${capture.tags.isNotEmpty ? '#${capture.tags.first.name} · ' : ''}${captureTypeLabel(capture.type)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           trailing: Icon(
             isLinked ? Icons.bookmark : Icons.bookmark_border,
@@ -684,10 +690,19 @@ class _ConnectorCaptureDetail extends StatelessWidget {
             const SizedBox(height: 12),
             _CapturePreview(capture: capture),
             const SizedBox(height: 14),
-            Text(capture.displayTitle, style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              capture.displayTitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             if (capture.content?.trim().isNotEmpty == true) ...[
               const SizedBox(height: 10),
-              Text(capture.content!),
+              Text(
+                capture.content!,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
             if (capture.url?.trim().isNotEmpty == true) ...[
               const SizedBox(height: 10),

@@ -167,8 +167,16 @@ class _RecentCaptures extends StatelessWidget {
                           foregroundColor: AppTheme.moss,
                           child: Icon(captureTypeIcon(capture.type)),
                         ),
-                        title: Text(capture.displayTitle),
-                        subtitle: Text(formatRelativeDate(capture.createdAt)),
+                        title: Text(
+                          capture.displayTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          formatRelativeDate(capture.createdAt),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         trailing: const Icon(Icons.chevron_right),
                       ),
                     ),
