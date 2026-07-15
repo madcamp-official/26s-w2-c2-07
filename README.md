@@ -416,6 +416,14 @@ interface ApiCapture {
 | ![Nook 시연 이미지 7](docs/images/Screenshot_20260715_162035.png) | ![Nook 시연 이미지 8](docs/images/Screenshot_20260715_162040.png) | ![Nook 시연 이미지 9](docs/images/Screenshot_20260715_162058.png) |
 | ![Nook 시연 이미지 10](docs/images/Screenshot_20260715_163222.png) | ![Nook 시연 이미지 11](docs/images/Screenshot_20260715_163234.png) |  |
 
+|---|---|---|
+| <img width="2556" height="1360" alt="image (9)" src="https://github.com/user-attachments/assets/c67b2be3-290f-4ba3-983e-71e7bb8d3dc3" />
+| <img width="2802" height="1488" alt="image (10)" src="https://github.com/user-attachments/assets/4c275e42-8f3f-4fd9-96e1-5109f4f0774e" />
+| <img width="2812" height="1466" alt="image (11)" src="https://github.com/user-attachments/assets/e8cce13c-29a0-4688-8d3c-7c0fbb513293" />
+| <img width="2780" height="1454" alt="image (12)" src="https://github.com/user-attachments/assets/81c513c1-74ee-4b89-8f55-9822c1804be7" />
+| <img width="2798" height="1490" alt="image (13)" src="https://github.com/user-attachments/assets/b555bba9-c0a6-4370-a597-c4164fc88cf1" /> | |
+
+
 ### 실행 방법
 
 ```bash
@@ -471,20 +479,17 @@ npm run dist
 ### Keep — 잘 된 점, 다음에도 유지할 것
 
 - 문제가 발생했을 때 서로 머리를 모아 함께 해결했던 경험이 값지다고 생각한다.
--
--
+- 역할 분담을 확실히 해서 충돌 문제가 거의 없었다.
 
 ### Problem — 아쉬웠던 점, 개선이 필요한 것
 
 - 초반에 명세서 등의 문서 작업을 명확히 하지 않았던 점이 이후 개발을 지체시키는 원인이 되었다.
--
--
+- 에뮬레이터로만 모바일 테스트를 진행할 수밖에 없었던 점이 아쉬웠다. 
 
 ### Try — 다음번에 시도해볼 것
 
 - Flutter를 써보았으니 React Native 등 다른 프레임워크를 써보면 좋을 것 같다.
--
--
+- Supabase 심화 기능을 더 활용해보고 싶다.
 
 ### 팀원별 소감
 
@@ -494,7 +499,7 @@ npm run dist
 
 **이서영:**
 
-> 
+> 문서화가 부족했어서 수정 사항이 잦았던 게 아쉬웠지만, 처음 Cross-Platform 개발을 해보면서 많이 배울 수 있었고 에러 원인을 파악하고 고쳐나가면서 의미있는 경험을 하였습니다.
 
 ---
 
