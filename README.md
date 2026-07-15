@@ -407,7 +407,14 @@ interface ApiCapture {
 - **산출물 설명:** 웹, 모바일, 데스크탑에서 글감을 수집하고 프로젝트·복수 원고로 발전시키는 Nook 프로토타입
 - **실행 환경:** Node.js, 웹 브라우저, Flutter 지원 Android/iOS 기기 또는 에뮬레이터, Windows 데스크탑 앱
 - **실행 방법:** 각 앱의 환경 변수를 구성하고 backend, web, mobile, desktop을 목적에 맞게 실행
-- **시연 영상 / 이미지:** (추후 추가)
+- **시연 이미지:**
+
+|  |  |  |
+|---|---|---|
+| ![Nook 시연 이미지 1](docs/images/Screenshot_20260715_161818.png) | ![Nook 시연 이미지 2](docs/images/Screenshot_20260715_161920.png) | ![Nook 시연 이미지 3](docs/images/Screenshot_20260715_161936.png) |
+| ![Nook 시연 이미지 4](docs/images/Screenshot_20260715_161957.png) | ![Nook 시연 이미지 5](docs/images/Screenshot_20260715_162009.png) | ![Nook 시연 이미지 6](docs/images/Screenshot_20260715_162020.png) |
+| ![Nook 시연 이미지 7](docs/images/Screenshot_20260715_162035.png) | ![Nook 시연 이미지 8](docs/images/Screenshot_20260715_162040.png) | ![Nook 시연 이미지 9](docs/images/Screenshot_20260715_162058.png) |
+| ![Nook 시연 이미지 10](docs/images/Screenshot_20260715_163222.png) | ![Nook 시연 이미지 11](docs/images/Screenshot_20260715_163234.png) |  |
 
 ### 실행 방법
 
