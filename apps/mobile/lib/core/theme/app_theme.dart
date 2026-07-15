@@ -11,6 +11,10 @@ abstract final class AppTheme {
   static const line = Color(0xFFE6D7C5);
   static const muted = Color(0xFF8B7A6B);
   static const coffee = Color(0xFF4B3428);
+  static const night = Color(0xFF17110D);
+  static const darkPaper = Color(0xFF241A14);
+  static const darkMist = Color(0xFF33261E);
+  static const darkLine = Color(0xFF4A382E);
 
   static ThemeData get light => ThemeData(
         useMaterial3: true,
@@ -117,4 +121,5 @@ abstract final class AppTheme {
           ),
         ),
       );
+
 }
