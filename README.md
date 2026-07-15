@@ -416,11 +416,10 @@ interface ApiCapture {
 | ![Nook 시연 이미지 7](docs/images/Screenshot_20260715_162035.png) | ![Nook 시연 이미지 8](docs/images/Screenshot_20260715_162040.png) | ![Nook 시연 이미지 9](docs/images/Screenshot_20260715_162058.png) |
 | ![Nook 시연 이미지 10](docs/images/Screenshot_20260715_163222.png) | ![Nook 시연 이미지 11](docs/images/Screenshot_20260715_163234.png) |  |
 
-|  |  |  |
 | <img width="2556" height="1360" alt="image (9)" src="https://github.com/user-attachments/assets/03425203-6d46-4cb8-aa8a-e4da5ecfa479" /> | <img width="2802" height="1488" alt="image (10)" src="https://github.com/user-attachments/assets/bd9a704e-86be-46fa-99dd-7e745b1cdf2d" /> |
 |---|---|
-| <img width="2812" height="1466" alt="image (11)" src="https://github.com/user-attachments/assets/b3fa8f16-007a-40b8-a4e5-035cc0c8b61b" /> | <img width="2226" height="1374" alt="image (14)" src="https://github.com/user-attachments/assets/1b3148a2-34cb-4871-83f4-6fc0f99c1e3e" /> |
-| <img width="2780" height="1454" alt="image (12)" src="https://github.com/user-attachments/assets/ef50287f-fcc2-4126-849b-4096d3f81714" /> | <img width="2798" height="1490" alt="image (13)" src="https://github.com/user-attachments/assets/e84e60c4-bf9d-4bfd-abc8-7cd899072dbd" /> |
+| <img width="2812" height="1466" alt="image (11)" src="https://github.com/user-attachments/assets/b3fa8f16-007a-40b8-a4e5-035cc0c8b61b" /> | <img width="2780" height="1454" alt="image (12)" src="https://github.com/user-attachments/assets/ef50287f-fcc2-4126-849b-4096d3f81714" /> |
+| <img width="2226" height="1374" alt="image (14)" src="https://github.com/user-attachments/assets/1b3148a2-34cb-4871-83f4-6fc0f99c1e3e" /> | <img width="2798" height="1490" alt="image (13)" src="https://github.com/user-attachments/assets/e84e60c4-bf9d-4bfd-abc8-7cd899072dbd" /> |
 
 
 ### 실행 방법
