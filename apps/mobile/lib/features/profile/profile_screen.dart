@@ -7,6 +7,7 @@ import '../../data/models/profile.dart';
 import '../../data/models/project.dart';
 import '../../data/repositories/captures_repository.dart';
 import '../../data/repositories/me_repository.dart';
+import '../../data/repositories/memory_cache.dart';
 import '../../data/repositories/projects_repository.dart';
 import '../../data/repositories/settings_repository.dart';
 
@@ -134,6 +135,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> signOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('로그아웃'),
+        content: const Text('현재 계정에서 로그아웃할까요?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('로그아웃'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    repositoryCache.clear();
     await Supabase.instance.client.auth.signOut();
   }
 
@@ -297,16 +318,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           icon: const Icon(Icons.edit_outlined),
           label: const Text('프로필 수정'),
         ),
-        TextButton.icon(
-          onPressed: signOut,
-          icon: const Icon(Icons.logout),
-          label: const Text('로그아웃'),
-        ),
-        TextButton.icon(
-          onPressed: deleteAccount,
-          icon: const Icon(Icons.person_remove_outlined),
-          label: const Text('회원 탈퇴'),
-          style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+        Row(
+          children: [
+            Expanded(
+              child: TextButton.icon(
+                onPressed: signOut,
+                icon: const Icon(Icons.logout),
+                label: const Text('로그아웃'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextButton.icon(
+                onPressed: deleteAccount,
+                icon: const Icon(Icons.person_remove_outlined),
+                label: const Text('회원 탈퇴'),
+                style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+              ),
+            ),
+          ],
         ),
       ],
     );
