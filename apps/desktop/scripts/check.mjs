@@ -21,7 +21,7 @@ for (const file of requiredFiles) {
 
 const mainSource = await readFile(path.join(desktopRoot, "src/main.js"), "utf8");
 
-if (!mainSource.includes("loadURL(resolvedWebAppUrl)")) {
+if (!mainSource.includes("loadWebAppWithRetry(resolvedWebAppUrl)")) {
   throw new Error("Desktop app must load the web app URL to keep UI identical.");
 }
 

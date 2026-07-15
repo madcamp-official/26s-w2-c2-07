@@ -178,6 +178,40 @@ function waitForWebApp(url, timeoutMs = 30000) {
   });
 }
 
+function isNavigationAbort(error) {
+  return error?.code === "ERR_ABORTED" || /\(-3\)|ERR_ABORTED/.test(error?.message || "");
+}
+
+async function loadSplashScreen() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+
+  try {
+    await mainWindow.loadFile(path.join(__dirname, "splash.html"));
+  } catch (error) {
+    if (!isNavigationAbort(error)) throw error;
+  }
+}
+
+async function loadWebAppWithRetry(url, attempts = 3) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+
+    try {
+      await mainWindow.loadURL(url);
+      return;
+    } catch (error) {
+      lastError = error;
+
+      if (!isNavigationAbort(error) || attempt === attempts) break;
+      await new Promise((resolve) => setTimeout(resolve, 350 * attempt));
+    }
+  }
+
+  throw lastError;
+}
+
 function desktopLoadErrorHtml(targetUrl, message) {
   return `
     <!doctype html>
@@ -261,7 +295,7 @@ async function createMainWindow() {
     }
   });
 
-  mainWindow.loadFile(path.join(__dirname, "splash.html"));
+  await loadSplashScreen();
 
   try {
     await Promise.all([
@@ -270,7 +304,7 @@ async function createMainWindow() {
     ]);
 
     if (mainWindow && !mainWindow.isDestroyed()) {
-      await mainWindow.loadURL(resolvedWebAppUrl);
+      await loadWebAppWithRetry(resolvedWebAppUrl);
     }
   } catch (error) {
     if (mainWindow && !mainWindow.isDestroyed()) {
